@@ -4,6 +4,7 @@ import com.metalbeetle.longan.dummy.DummyLetterFinder;
 import com.metalbeetle.longan.dummy.DummyLetterIdentifier;
 import com.metalbeetle.longan.dummy.DummyLineChunker;
 import com.metalbeetle.longan.dummy.DummyWordChunker;
+import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
 import com.metalbeetle.longan.stage.*;
 import java.awt.Rectangle;
@@ -18,6 +19,17 @@ public class Longan {
 	final WordChunker wordChunker;
 	final List<PostProcessor> postProcessors;
 	final PlaintextConverter plaintextConverter;
+
+	public static Longan getSimpleImplementation() {
+		return new Longan(
+			new SimpleLetterFinder(),
+			new DummyLetterIdentifier(),
+			new DummyLineChunker(),
+			new DummyWordChunker(),
+			new ArrayList<PostProcessor>(),
+			new SimpleWordPlaintextConverter()
+		);
+	}
 
 	public static Longan getDummyImplementation() {
 		return new Longan(

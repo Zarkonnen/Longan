@@ -15,11 +15,11 @@ public class Main {
 		}
 
 		if (args[0].equals("recognize")) {
-			System.out.print(Longan.getDummyImplementation().recognize(ImageIO.read(new File(args[1]))));
+			System.out.print(Longan.getSimpleImplementation().recognize(ImageIO.read(new File(args[1]))));
 		}
 		if (args[0].equals("visualize")) {
 			BufferedImage img = ImageIO.read(new File(args[1]));
-			Longan.getDummyImplementation().visualize(img);
+			Longan.getSimpleImplementation().visualize(img);
 			ImageIO.write(img, "jpg", new File(args[2]));
 		}
 	}
