@@ -11,6 +11,6 @@ public class Main {
 			return;
 		}
 
-		System.out.print(new Longan().recognize(ImageIO.read(new File(args[0]))));
+		System.out.print(Longan.getDummyImplementation().recognize(ImageIO.read(new File(args[0]))));
 	}
 }
