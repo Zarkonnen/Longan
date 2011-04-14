@@ -43,6 +43,10 @@ public class Longan {
 		return plaintextConverter.convert(process(img), img);
 	}
 
+	public void visualize(BufferedImage img) {
+		Visualizer.visualize(process(img), img);
+	}
+
 	public ArrayList<ArrayList<ArrayList<Letter>>> process(BufferedImage img) {
 		ArrayList<Rectangle> letterRects = letterFinder.find(img);
 		ArrayList<Letter> letters = letterIdentifier.identify(letterRects, img);
