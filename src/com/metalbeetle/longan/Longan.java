@@ -45,10 +45,7 @@ public class Longan {
 
 	public ArrayList<ArrayList<ArrayList<Letter>>> process(BufferedImage img) {
 		ArrayList<Rectangle> letterRects = letterFinder.find(img);
-		ArrayList<Letter> letters = new ArrayList<Letter>(letterRects.size());
-		for (Rectangle lr : letterRects) {
-			letters.add(letterIdentifier.identify(lr, img));
-		}
+		ArrayList<Letter> letters = letterIdentifier.identify(letterRects, img);
 		ArrayList<ArrayList<Letter>> lines = lineChunker.chunk(letters, img);
 		ArrayList<ArrayList<ArrayList<Letter>>> wordLines = wordChunker.chunk(lines, img);
 		for (PostProcessor pp : postProcessors) {
