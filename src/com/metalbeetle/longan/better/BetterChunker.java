@@ -26,12 +26,18 @@ public class BetterChunker implements Chunker {
 	 */
 
 	public ArrayList<ArrayList<ArrayList<Rectangle>>> chunk(ArrayList<Rectangle> rects, BufferedImage img) {
-		long sizeSum = 0;
+		// Calculate the inter-quartile mean of sizes.
+		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		for (Rectangle r : rects) {
-			sizeSum += Math.sqrt(r.width * r.height);
+			sizes.add((int) Math.sqrt(r.width * r.height));
 		}
-		int avgSize = (int) (sizeSum / rects.size());
-		System.out.println("Average letter size: " + avgSize);
+		Collections.sort(sizes);
+		long sizeSum = 0;
+		for (int sz : sizes.subList(sizes.size() / 4, sizes.size() * 3 / 4)) {
+			sizeSum += sz;
+		}
+		int avgSize = (int) (sizeSum / (rects.size() / 2));
+		System.out.println("Inter-quartile mean of letter size: " + avgSize);
 		ArrayList<Rectangle> wholes = new ArrayList<Rectangle>();
 		ArrayList<Rectangle> pieces = new ArrayList<Rectangle>();
 		for (Rectangle r : rects) {
@@ -100,19 +106,21 @@ public class BetterChunker implements Chunker {
 			}
 		}
 		
-		// Now calculate the average between-letter distance.
-		long distSum = 0;
-		int numDists = 0;
+		// Now calculate the inter-quartile mean between-letter distances.
+		ArrayList<Integer> distances = new ArrayList<Integer>();
 		for (Line l : lines) {
 			for (int i = 0; i < l.rs.size() - 1; i++) {
 				Rectangle r0 = l.rs.get(i);
 				Rectangle r1 = l.rs.get(i + 1);
-				distSum += r1.x - (r0.x + r0.width);
+				distances.add(r1.x - (r0.x + r0.width));
 			}
-			numDists += l.rs.size() - 1;
 		}
-		double avgDist = ((double) distSum) / numDists;
-		System.out.println("Average letter distance: " + avgDist);
+		long distSum = 0;
+		for (int d : distances.subList(distances.size() / 4, distances.size() * 3 / 4)) {
+			distSum += d;
+		}
+		double avgDist = ((double) distSum) / (distances.size() / 2);
+		System.out.println("Inter-quartile mean of letter distance: " + avgDist);
 		
 		ArrayList<ArrayList<ArrayList<Rectangle>>> result = new ArrayList<ArrayList<ArrayList<Rectangle>>>();
 		for (Line l : lines) {
@@ -123,7 +131,9 @@ public class BetterChunker implements Chunker {
 				Rectangle r0 = l.rs.get(i);
 				Rectangle r1 = l.rs.get(i + 1);
 				int dist = r1.x - (r0.x + r0.width);
-				if (dist > avgDist * 0.5) {
+				// Compare the letter distance to the average distance, somewhat modified by the
+				// size of the first of the two letters. (Larger text: larger spacing.)
+				if (dist > avgDist * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)) {
 					rLine.add(word);
 					word = new ArrayList<Rectangle>();
 				}
