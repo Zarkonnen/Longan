@@ -32,6 +32,20 @@ public class SimpleLetterFinder implements LetterFinder {
 					floodQueue.add(new Point(searchX, searchY));
 					floodFill(scan, floodQueue, r, floodID++);
 					if (r.getWidth() * r.getHeight() >= MIN_AREA) {
+						if (r.x > 0) {
+							r.x--;
+							r.width++;
+						}
+						if (r.y > 0) {
+							r.y--;
+							r.height++;
+						}
+						if (r.x + r.width < img.getWidth()) {
+							r.width++;
+						}
+						if (r.y + r.height < img.getHeight()) {
+							r.height++;
+						}
 						rs.add(r);
 					}
 				}

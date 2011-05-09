@@ -1,5 +1,6 @@
 package com.metalbeetle.longan;
 
+import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -10,7 +11,8 @@ public class Main {
 		if (args.length == 0) {
 			System.out.println("Usage:\n" +
 					"java -jar longan.jar recognize path-to-image-file\n" +
-					"java -jar longan.jar visualize path-to-image-file path-to-output-file\n");
+					"java -jar longan.jar visualize path-to-image-file path-to-output-file\n" +
+					"java -jar longan.jar categorize path-to-image-file path-to-output-folder\n");
 			return;
 		}
 
@@ -21,6 +23,10 @@ public class Main {
 			BufferedImage img = ImageIO.read(new File(args[1]));
 			Longan.getSimpleImplementation().visualize(img);
 			ImageIO.write(img, "jpg", new File(args[2]));
+		}
+		if (args[0].equals("categorize")) {
+			LetterTestDataCategoriser ltdc = new LetterTestDataCategoriser(new SimpleLetterFinder());
+			ltdc.run(new File(args[1]), new File(args[2]));
 		}
 	}
 }
