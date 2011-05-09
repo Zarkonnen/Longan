@@ -27,11 +27,10 @@ public class Visualizer {
 		}
 
 		// Lines
-		/*
 		g.setColor(new Color(0, 127, 0, 191));
 		for (ArrayList<ArrayList<Letter>> line : out) {
+			Letter prevLetter = null;
 			for (ArrayList<Letter> word : line) {
-				Letter prevLetter = null;
 				for (Letter letter : word) {
 					if (prevLetter != null) {
 						g.drawLine(
@@ -61,8 +60,6 @@ public class Visualizer {
 				g.drawRect(wr.x - (int) thickness * 2, wr.y - (int) thickness * 2, wr.width + (int) thickness * 4, wr.height + (int) thickness * 4);
 			}
 		}
-		 * 
-		 */
 
 		g.dispose();
 	}

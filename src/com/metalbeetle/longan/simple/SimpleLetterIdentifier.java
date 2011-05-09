@@ -86,12 +86,8 @@ public class SimpleLetterIdentifier implements LetterIdentifier {
 		EXAMPLES = exs;
 	}
 
-	public ArrayList<Letter> identify(ArrayList<Rectangle> possibleLetters, BufferedImage img) {
-		ArrayList<Letter> ls = new ArrayList<Letter>();
-		for (Rectangle r : possibleLetters) {
-			ls.add(new Letter(r, identifyLetter(r, img)));
-		}
-		return ls;
+	public Letter identify(Rectangle r, BufferedImage img) {
+		return new Letter(r, identifyLetter(r, img));
 	}
 
 	static int lid = 0;

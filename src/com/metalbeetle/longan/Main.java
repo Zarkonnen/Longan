@@ -21,6 +21,13 @@ public class Main {
 		}
 		if (args[0].equals("visualize")) {
 			BufferedImage img = ImageIO.read(new File(args[1]));
+			if (img.getType() != BufferedImage.TYPE_INT_RGB &&
+				img.getType() != BufferedImage.TYPE_INT_ARGB)
+			{
+				BufferedImage img2 = new BufferedImage(img.getWidth(), img.getHeight(), BufferedImage.TYPE_INT_RGB);
+				img2.getGraphics().drawImage(img, 0, 0, null);
+				img = img2;
+			}
 			Longan.getSimpleImplementation().visualize(img);
 			ImageIO.write(img, "jpg", new File(args[2]));
 		}
