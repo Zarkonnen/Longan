@@ -1,5 +1,6 @@
 package com.metalbeetle.longan;
 
+import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -32,7 +33,8 @@ public class Main {
 			ImageIO.write(img, "jpg", new File(args[2]));
 		}
 		if (args[0].equals("categorize")) {
-			LetterTestDataCategoriser ltdc = new LetterTestDataCategoriser(new SimpleLetterFinder());
+			LetterTestDataCategoriser ltdc = new LetterTestDataCategoriser(new SimpleLetterFinder(),
+					new BetterChunker());
 			ltdc.run(new File(args[1]), new File(args[2]));
 		}
 	}

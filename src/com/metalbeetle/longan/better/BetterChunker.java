@@ -37,7 +37,7 @@ public class BetterChunker implements Chunker {
 			sizeSum += sz;
 		}
 		int avgSize = (int) (sizeSum / (rects.size() / 2));
-		System.out.println("Inter-quartile mean of letter size: " + avgSize);
+		//System.out.println("Inter-quartile mean of letter size: " + avgSize);
 		ArrayList<Rectangle> wholes = new ArrayList<Rectangle>();
 		ArrayList<Rectangle> pieces = new ArrayList<Rectangle>();
 		for (Rectangle r : rects) {
@@ -99,7 +99,7 @@ public class BetterChunker implements Chunker {
 					// r0 ends after r1, so r1 is entirely within r0
 				}
 				// They overlap enough: coalesce.
-				System.out.println("coalescing");
+				//System.out.println("coalescing");
 				r0.add(r1);
 				l.rs.remove(i + 1);
 				i--;
@@ -120,7 +120,7 @@ public class BetterChunker implements Chunker {
 			distSum += d;
 		}
 		double avgDist = ((double) distSum) / (distances.size() / 2);
-		System.out.println("Inter-quartile mean of letter distance: " + avgDist);
+		//System.out.println("Inter-quartile mean of letter distance: " + avgDist);
 		
 		ArrayList<ArrayList<ArrayList<Rectangle>>> result = new ArrayList<ArrayList<ArrayList<Rectangle>>>();
 		for (Line l : lines) {

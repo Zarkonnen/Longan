@@ -1,5 +1,6 @@
 package com.metalbeetle.longan;
 
+import com.metalbeetle.longan.stage.Chunker;
 import com.metalbeetle.longan.stage.LetterFinder;
 import java.awt.Canvas;
 import java.awt.Color;
@@ -17,13 +18,15 @@ import javax.swing.JOptionPane;
 
 public class LetterTestDataCategoriser implements KeyListener {
 	LetterFinder lf;
+	Chunker chunker;
 	Canvas c;
 	String letter = null;
 	BufferedImage img;
 	Rectangle letterR;
 
-	public LetterTestDataCategoriser(LetterFinder lf) {
+	public LetterTestDataCategoriser(LetterFinder lf, Chunker chunker) {
 		this.lf = lf;
+		this.chunker = chunker;
 	}
 	
 	public void run(File sourceFile, File targetFolder) {
@@ -73,6 +76,13 @@ public class LetterTestDataCategoriser implements KeyListener {
 			return;
 		}
 		ArrayList<Rectangle> rects = lf.find(img);
+		ArrayList<ArrayList<ArrayList<Rectangle>>> rs = chunker.chunk(rects, img);
+		rects.clear();
+		for (ArrayList<ArrayList<Rectangle>> line : rs) {
+			for (ArrayList<Rectangle> word : line) {
+				rects.addAll(word);
+			}
+		}
 		
 		for (Rectangle r : rects) {
 			letter = null;
@@ -91,7 +101,12 @@ public class LetterTestDataCategoriser implements KeyListener {
 			if (!targetFolder.exists()) {
 				targetFolder.mkdirs();
 			}
-			String charS = letter.equals("/") ? "slash" : letter;
+			String charS =
+					letter.equals("/")
+					? "slash"
+					: letter.equals(".")
+					? "period"
+					: letter;
 			if (!charS.toLowerCase().equals(charS)) {
 				charS = charS.toLowerCase() + "-uc";
 			}

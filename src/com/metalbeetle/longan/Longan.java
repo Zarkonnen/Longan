@@ -4,6 +4,7 @@ import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.dummy.DummyLetterFinder;
 import com.metalbeetle.longan.dummy.DummyLetterIdentifier;
 import com.metalbeetle.longan.dummy.DummyChunker;
+import com.metalbeetle.longan.neuralnetwork.NeuralNetworkLetterIdentifier;
 import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import com.metalbeetle.longan.simple.SimpleLetterIdentifier;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
@@ -24,7 +25,7 @@ public class Longan {
 		return new Longan(
 			new SimpleLetterFinder(),
 			new BetterChunker(),
-			new SimpleLetterIdentifier(),
+			new NeuralNetworkLetterIdentifier(),
 			new ArrayList<PostProcessor>(),
 			new SimpleWordPlaintextConverter()
 		);
