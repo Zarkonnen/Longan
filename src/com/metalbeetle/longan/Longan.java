@@ -4,7 +4,6 @@ import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.EnglishDictPostProcessor;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
 import com.metalbeetle.longan.neuralnetwork.NeuralNetworkLetterIdentifier2;
-import com.metalbeetle.longan.neuralnetwork2.NeuralNetworkLetterIdentifier3;
 import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
 import com.metalbeetle.longan.stage.*;

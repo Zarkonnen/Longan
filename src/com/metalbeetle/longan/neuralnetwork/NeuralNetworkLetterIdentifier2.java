@@ -45,7 +45,7 @@ public class NeuralNetworkLetterIdentifier2 implements LetterIdentifier {
 
 	public NeuralNetworkLetterIdentifier2() {
 		net = new Lenet4eNet();
-		InputStream is = NeuralNetworkLetterIdentifier.class.getResourceAsStream("data/l4edata");
+		InputStream is = NeuralNetworkLetterIdentifier2.class.getResourceAsStream("data/l4edata");
 		try {
 			NetworkIO.input(net.nw, is);
 			is.close();
