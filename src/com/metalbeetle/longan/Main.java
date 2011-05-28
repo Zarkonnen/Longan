@@ -18,7 +18,7 @@ public class Main {
 		}
 
 		if (args[0].equals("recognize")) {
-			System.out.print(Longan.getSimpleImplementation().recognize(ImageIO.read(new File(args[1]))));
+			System.out.print(Longan.getDefaultImplementation().recognize(ImageIO.read(new File(args[1]))));
 		}
 		if (args[0].equals("visualize")) {
 			BufferedImage img = ImageIO.read(new File(args[1]));
@@ -29,7 +29,7 @@ public class Main {
 				img2.getGraphics().drawImage(img, 0, 0, null);
 				img = img2;
 			}
-			Longan.getSimpleImplementation().visualize(img);
+			Longan.getDefaultImplementation().visualize(img);
 			ImageIO.write(img, "jpg", new File(args[2]));
 		}
 		if (args[0].equals("categorize")) {

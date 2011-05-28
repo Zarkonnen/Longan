@@ -1,0 +1,13 @@
+Atomic Text Records is the storage system used by Fruitbat.
+
+When used append-only, ATRReader (and SimpleATRReader) will ignore all fields and records that failed to be written in their entirety, making appending fields and records atomic in practice.
+
+The format only uses visible ASCII characters in the range of " " (32) to "~" (126). The record start marker is line feed, and the field end marker is tab, making the format readable as TSV. However note that records not terminated with "%" and fields not started with ":" should be ignored.
+
+Backslash, colon, tab, line feed, percent and carriage return are all escaped using two-character escape codes, while all other characters not in the range of " " to "~" are represented as six-digit hexadecimal representations of their unicode code points.
+
+An ATR file (without aborted fields or records) looks like this:
+<START OF FILE>
+:a	:b	:c	%
+:x\ny	:fruit	:y	:\u000b17\t	%<END OF FILE>
+ 

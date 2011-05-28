@@ -1,6 +1,6 @@
 package com.metalbeetle.longan.better;
 
-import com.metalbeetle.longan.dummy.DummyChunker;
+import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -25,7 +25,7 @@ public class BetterChunker implements Chunker {
 	 * - go over each line and put all letters that are closer than average together into words
 	 */
 
-	public ArrayList<ArrayList<ArrayList<Rectangle>>> chunk(ArrayList<Rectangle> rects, BufferedImage img) {
+	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(ArrayList<LetterRect> rects, BufferedImage img) {
 		// Calculate the inter-quartile mean of sizes.
 		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		for (Rectangle r : rects) {
@@ -38,9 +38,9 @@ public class BetterChunker implements Chunker {
 		}
 		int avgSize = (int) (sizeSum / (rects.size() / 2));
 		//System.out.println("Inter-quartile mean of letter size: " + avgSize);
-		ArrayList<Rectangle> wholes = new ArrayList<Rectangle>();
-		ArrayList<Rectangle> pieces = new ArrayList<Rectangle>();
-		for (Rectangle r : rects) {
+		ArrayList<LetterRect> wholes = new ArrayList<LetterRect>();
+		ArrayList<LetterRect> pieces = new ArrayList<LetterRect>();
+		for (LetterRect r : rects) {
 			double size = Math.sqrt(r.width * r.height);
 			if (size <= avgSize * 4.0 && r.width <= avgSize * 3.0 && r.height <= avgSize * 3.0) {
 				if (size < avgSize * 0.5) {
@@ -55,7 +55,7 @@ public class BetterChunker implements Chunker {
 			pieces.clear();
 		}
 		ArrayList<Line> lines = new ArrayList<Line>();
-		rects: for (Rectangle r : wholes) {
+		rects: for (LetterRect r : wholes) {
 			for (Line l : lines) {
 				if (l.verticalCentre >= r.y - avgSize * 0.4 &&
 					l.verticalCentre <= r.y + r.height + avgSize * 0.4)
@@ -68,7 +68,7 @@ public class BetterChunker implements Chunker {
 			l.add(r);
 			lines.add(l);
 		}
-		for (Rectangle r : pieces) {
+		for (LetterRect r : pieces) {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
@@ -106,6 +106,14 @@ public class BetterChunker implements Chunker {
 			}
 		}
 		
+		// Next, fill in the relativeLineOffset / relativeSize values.
+		for (Line l : lines) {
+			for (LetterRect r : l.rs) {
+				r.relativeLineOffset = (r.getCenterY() - l.verticalCentre) / avgSize;
+				r.relativeSize = Math.sqrt(r.width * r.height) / avgSize;
+			}
+		}
+		
 		// Now calculate the inter-quartile mean between-letter distances.
 		ArrayList<Integer> distances = new ArrayList<Integer>();
 		for (Line l : lines) {
@@ -122,20 +130,20 @@ public class BetterChunker implements Chunker {
 		double avgDist = ((double) distSum) / (distances.size() / 2);
 		//System.out.println("Inter-quartile mean of letter distance: " + avgDist);
 		
-		ArrayList<ArrayList<ArrayList<Rectangle>>> result = new ArrayList<ArrayList<ArrayList<Rectangle>>>();
+		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
 		for (Line l : lines) {
-			ArrayList<ArrayList<Rectangle>> rLine = new ArrayList<ArrayList<Rectangle>>();
-			ArrayList<Rectangle> word = new ArrayList<Rectangle>();
+			ArrayList<ArrayList<LetterRect>> rLine = new ArrayList<ArrayList<LetterRect>>();
+			ArrayList<LetterRect> word = new ArrayList<LetterRect>();
 			word.add(l.rs.get(0));
 			for (int i = 0; i < l.rs.size() - 1; i++) {
-				Rectangle r0 = l.rs.get(i);
-				Rectangle r1 = l.rs.get(i + 1);
+				LetterRect r0 = l.rs.get(i);
+				LetterRect r1 = l.rs.get(i + 1);
 				int dist = r1.x - (r0.x + r0.width);
 				// Compare the letter distance to the average distance, somewhat modified by the
 				// size of the first of the two letters. (Larger text: larger spacing.)
-				if (dist > avgDist * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)) {
+				if (dist > avgDist * 1.25/* * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)*/) {
 					rLine.add(word);
-					word = new ArrayList<Rectangle>();
+					word = new ArrayList<LetterRect>();
 				}
 				word.add(r1);
 			}
@@ -146,17 +154,17 @@ public class BetterChunker implements Chunker {
 		return result;
 	}
 	
-	static class XComparator implements Comparator<Rectangle> {
-		public int compare(Rectangle r0, Rectangle r1) {
+	static class XComparator implements Comparator<LetterRect> {
+		public int compare(LetterRect r0, LetterRect r1) {
 			return r0.x - r1.x;
 		}
 	}
 	
 	class Line {
-		ArrayList<Rectangle> rs = new ArrayList<Rectangle>();
+		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
 		int verticalCentre = 0;
 		
-		void add(Rectangle r) {
+		void add(LetterRect r) {
 			rs.add(r);
 			verticalCentre = 0;
 			for (Rectangle r2 : rs) {

@@ -1,18 +1,18 @@
 package com.metalbeetle.longan.simple;
 
+import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.LetterFinder;
 import java.awt.Color;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class SimpleLetterFinder implements LetterFinder {
-	static final int INTENSITY_BOUNDARY = 133;
-	static final int MIN_AREA = 4;
+	static final int INTENSITY_BOUNDARY = 165;
+	static final int MIN_AREA = 1;
 
-	public ArrayList<Rectangle> find(BufferedImage img) {
+	public ArrayList<LetterRect> find(BufferedImage img) {
 		int[][] scan = new int[img.getHeight()][img.getWidth()];
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
@@ -22,16 +22,16 @@ public class SimpleLetterFinder implements LetterFinder {
 			}
 		}
 
-		ArrayList<Rectangle> rs = new ArrayList<Rectangle>();
+		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
 		int floodID = 2;
 		for (int searchY = 0; searchY < img.getHeight(); searchY++) {
 			for (int searchX = 0; searchX < img.getWidth(); searchX++) {
 				if (scan[searchY][searchX] == 1) {
-					Rectangle r = new Rectangle(searchX, searchY, 1, 1);
+					LetterRect r = new LetterRect(searchX, searchY, 1, 1);
 					LinkedList<Point> floodQueue = new LinkedList<Point>();
 					floodQueue.add(new Point(searchX, searchY));
 					floodFill(scan, floodQueue, r, floodID++);
-					if (r.getWidth() * r.getHeight() >= MIN_AREA) {
+					if (r.width * r.height >= MIN_AREA) {
 						if (r.x > 0) {
 							r.x--;
 							r.width++;
@@ -55,7 +55,7 @@ public class SimpleLetterFinder implements LetterFinder {
 		return rs;
 	}
 
-	private void floodFill(int[][] scan, LinkedList<Point> floodQueue, Rectangle r, int floodID) {
+	private void floodFill(int[][] scan, LinkedList<Point> floodQueue, LetterRect r, int floodID) {
 		while (floodQueue.size() > 0) {
 			Point p = floodQueue.poll();
 			int y = p.y;

@@ -1,12 +1,12 @@
 package com.metalbeetle.longan.neuralnetwork;
 
 import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.LetterIdentifier;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +70,7 @@ public class NeuralNetworkLetterIdentifier implements LetterIdentifier {
 		}
 	}
 
-	public Letter identify(Rectangle r, BufferedImage img) {
+	public Letter identify(LetterRect r, BufferedImage img) {
 		double[] data = convolve(r, img);
 		HashMap<String, Double> scores = new HashMap<String, Double>();
 		for (Map.Entry<String, MicroNetwork> e : networks.entrySet()) {
