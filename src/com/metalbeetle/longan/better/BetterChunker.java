@@ -1,12 +1,15 @@
 package com.metalbeetle.longan.better;
 
+import com.metalbeetle.longan.Histogram;
 import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import javax.imageio.ImageIO;
 
 public class BetterChunker implements Chunker {
 	/*
@@ -83,6 +86,7 @@ public class BetterChunker implements Chunker {
 		for (Line l : lines) {
 			Collections.sort(l.rs, new XComparator());
 		}
+		
 		for (Line l : lines) {
 			// Go over letter pairs and coalesce if needed.
 			for (int i = 0; i < l.rs.size() - 1; i++) {
@@ -115,20 +119,27 @@ public class BetterChunker implements Chunker {
 		}
 		
 		// Now calculate the inter-quartile mean between-letter distances.
+		Histogram hg = new Histogram();
 		ArrayList<Integer> distances = new ArrayList<Integer>();
 		for (Line l : lines) {
 			for (int i = 0; i < l.rs.size() - 1; i++) {
 				Rectangle r0 = l.rs.get(i);
 				Rectangle r1 = l.rs.get(i + 1);
 				distances.add(r1.x - (r0.x + r0.width));
+				hg.add(r1.x - (r0.x + r0.width));
 			}
 		}
+		/*try {
+			ImageIO.write(hg.toImage(), "jpg", new File("/Users/zar/Desktop/letter-distance-histogram.jpg"));
+		} catch (Exception e) { e.printStackTrace(); }*/
 		long distSum = 0;
 		for (int d : distances.subList(distances.size() / 4, distances.size() * 3 / 4)) {
 			distSum += d;
 		}
 		double avgDist = ((double) distSum) / (distances.size() / 2);
-		//System.out.println("Inter-quartile mean of letter distance: " + avgDist);
+		System.out.println("Inter-quartile mean of letter distance: " + avgDist);
+		System.out.println("Histogrammed letter distance divider: " + hg.firstValleyEnd());
+		avgDist = hg.firstValleyEnd();
 		
 		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
 		for (Line l : lines) {
@@ -141,7 +152,8 @@ public class BetterChunker implements Chunker {
 				int dist = r1.x - (r0.x + r0.width);
 				// Compare the letter distance to the average distance, somewhat modified by the
 				// size of the first of the two letters. (Larger text: larger spacing.)
-				if (dist > avgDist * 1.25/* * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)*/) {
+				//if (dist > avgDist * 1.25/* * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)*/) {
+				if (dist > avgDist) {
 					rLine.add(word);
 					word = new ArrayList<LetterRect>();
 				}
@@ -171,6 +183,18 @@ public class BetterChunker implements Chunker {
 				verticalCentre += r2.getCenterY();
 			}
 			verticalCentre /= rs.size();
+		}
+		
+		double tilt() {
+			if (rs.size() < 2) { return 0.0; }
+			/*return (rs.get(rs.size() - 1).getCenterY() - rs.get(0).getCenterY()) /
+					(rs.get(rs.size() - 1).getCenterX() - rs.get(0).getCenterX() + 0.001);*/
+			double dYSum = 0;
+			for (int i = 0; i < rs.size() - 1; i++) {
+				dYSum += (rs.get(i + 1).getCenterY() - rs.get(i).getCenterY()) /
+					(rs.get(i + 1).getCenterX() - rs.get(i).getCenterX() + 1);
+			}
+			return dYSum / (rs.size() - 1);
 		}
 	}
 }
