@@ -9,9 +9,11 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
-public class NeuralNetworkLetterIdentifier2 implements LetterIdentifier {
+public class NNLetterIdentifier3 implements LetterIdentifier {
 	final Lenet4eNet net;
 	
 	static final int OUTPUT_SIZE = 128;
@@ -23,12 +25,25 @@ public class NeuralNetworkLetterIdentifier2 implements LetterIdentifier {
 		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
 	};
 	
+	static final List<String> CASE_MERGED = Arrays.asList(new String[] {
+		"c", "m", "o", "p", "s", "u", "v", "w", "x", "z"
+	});
+	
 	static final double[][] LETTER_TARGETS = new double[LETTERS.length][OUTPUT_SIZE];
 	static {
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			for (int l = 0; l < LETTERS.length; l++) {
-				byte[] digest = md.digest(LETTERS[l].getBytes("UTF-8"));
+				String s = LETTERS[l];
+				byte[] digest;
+				if (CASE_MERGED.contains(s.toLowerCase())) {
+					 digest = md.digest(s.toLowerCase().getBytes("UTF-8"));
+				} else {
+					 digest = md.digest(s.getBytes("UTF-8"));
+				}
+				if (s.equals("0")) {
+					digest = md.digest("o".getBytes("UTF-8"));
+				}
 				for (int i = 0; i < 16; i++) {
 					for (int j = 0; j < 8; j++) {
 						LETTER_TARGETS[l][i * 8 + j] = (digest[i] >>> j) & 1;
@@ -41,9 +56,9 @@ public class NeuralNetworkLetterIdentifier2 implements LetterIdentifier {
 		}
 	}
 
-	public NeuralNetworkLetterIdentifier2() {
+	public NNLetterIdentifier3() {
 		net = new Lenet4eNet();
-		InputStream is = NeuralNetworkLetterIdentifier2.class.getResourceAsStream("data/l4edata");
+		InputStream is = NeuralNetworkLetterIdentifier2.class.getResourceAsStream("data/l4edata3");
 		try {
 			NetworkIO.input(net.nw, is);
 			is.close();
@@ -94,11 +109,6 @@ public class NeuralNetworkLetterIdentifier2 implements LetterIdentifier {
 				r.x + r.width, r.y + r.height,
 				null);
 		src = scaledSrc;
-		try {
-			//ImageIO.write(src, "png", new File("/Users/zar/Desktop/img/" + r.x + "-" + r.y + ".png"));
-		} catch (Exception e) {
-			//
-		}
 		double[] result = new double[28 * 28];
 		for (int y = 0; y < 28; y++) { for (int x = 0; x < 28; x++) {
 			Color c = new Color(src.getRGB(x, y));

@@ -23,4 +23,14 @@ public class Letter {
 		}
 		return bestL;
 	}
+
+	public double bestScore() {
+		double bestP = 0.0;
+		for (Map.Entry<String, Double> entry : possibleLetters.entrySet()) {
+			if (entry.getValue() > bestP) {
+				bestP = entry.getValue();
+			}
+		}
+		return bestP;
+	}
 }

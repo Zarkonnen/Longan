@@ -3,6 +3,8 @@ package com.metalbeetle.longan;
 import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.EnglishDictPostProcessor;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
+import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
+import com.metalbeetle.longan.neuralnetwork.NNLetterIdentifier3;
 import com.metalbeetle.longan.neuralnetwork.NeuralNetworkLetterIdentifier2;
 import com.metalbeetle.longan.simple.SimpleLetterFinder;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
@@ -20,12 +22,13 @@ public class Longan {
 
 	public static Longan getDefaultImplementation() {
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
+		pps.add(new NNLI3PostProcessor());
 		pps.add(new HeuristicPostProcessor());
-		pps.add(new EnglishDictPostProcessor());
+		//pps.add(new EnglishDictPostProcessor());
 		return new Longan(
 			new SimpleLetterFinder(),
 			new BetterChunker(),
-			new NeuralNetworkLetterIdentifier2(),
+			new NNLetterIdentifier3(),
 			pps,
 			new SimpleWordPlaintextConverter()
 		);
