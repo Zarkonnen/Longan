@@ -1,24 +1,40 @@
-package com.metalbeetle.longan.simple;
+package com.metalbeetle.longan.better;
 
+import com.metalbeetle.longan.Histogram;
 import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.LetterFinder;
 import java.awt.Color;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
-public class SimpleLetterFinder implements LetterFinder {
-	static final int INTENSITY_BOUNDARY = 165;
-	static final int MIN_AREA = 1;
-
-	public ArrayList<LetterRect> find(BufferedImage img) {
+public class BetterLetterFinder implements LetterFinder {
+	public ArrayList<LetterRect> find(BufferedImage img, HashMap<String, String> metadata) {
+		Histogram hg = new Histogram(256);
+		
+		for (int y = 0; y < img.getHeight(); y++) {
+			for (int x = 0; x < img.getWidth(); x++) {
+				Color c = new Color(img.getRGB(x, y));
+				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
+				hg.add(intensity);
+			}
+		}
+		
+		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
+		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
+		hg.convolve(new double[] { 3000.0 / img.getWidth() / img.getHeight() }); // Get rid of minor wobbles
+		
+		int intensityBoundary = hg.firstValleyEnd();
+		metadata.put("letterFinderIntensityBoundary", "" + intensityBoundary); 
+				
 		int[][] scan = new int[img.getHeight()][img.getWidth()];
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
 				Color c = new Color(img.getRGB(x, y));
 				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-				scan[y][x] = intensity > INTENSITY_BOUNDARY ? 0 : 1;
+				scan[y][x] = intensity > intensityBoundary ? 0 : 1;
 			}
 		}
 
@@ -31,23 +47,21 @@ public class SimpleLetterFinder implements LetterFinder {
 					LinkedList<Point> floodQueue = new LinkedList<Point>();
 					floodQueue.add(new Point(searchX, searchY));
 					floodFill(scan, floodQueue, r, floodID++);
-					if (r.width * r.height >= MIN_AREA) {
-						if (r.x > 0) {
-							r.x--;
-							r.width++;
-						}
-						if (r.y > 0) {
-							r.y--;
-							r.height++;
-						}
-						if (r.x + r.width < img.getWidth()) {
-							r.width++;
-						}
-						if (r.y + r.height < img.getHeight()) {
-							r.height++;
-						}
-						rs.add(r);
+					if (r.x > 0) {
+						r.x--;
+						r.width++;
 					}
+					if (r.y > 0) {
+						r.y--;
+						r.height++;
+					}
+					if (r.x + r.width < img.getWidth()) {
+						r.width++;
+					}
+					if (r.y + r.height < img.getHeight()) {
+						r.height++;
+					}
+					rs.add(r);
 				}
 			}
 		}
@@ -60,7 +74,6 @@ public class SimpleLetterFinder implements LetterFinder {
 			Point p = floodQueue.poll();
 			int y = p.y;
 			int x = p.x;
-			//System.out.println(floodID + ": " + x + " / " + y);
 			scan[y][x] = floodID;
 			r.add(x, y);
 			for (int dy = -1; dy < 2; dy++) { for (int dx = -1; dx < 2; dx++) {

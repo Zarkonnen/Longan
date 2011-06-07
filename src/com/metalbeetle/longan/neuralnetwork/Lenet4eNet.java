@@ -47,7 +47,7 @@ public class Lenet4eNet {
 		}
 		
 		Layer output = new Layer("Output");
-		for (int i = 0; i < NeuralNetworkLetterIdentifier2.OUTPUT_SIZE; i++) {
+		for (int i = 0; i < NNLetterIdentifier3.OUTPUT_SIZE; i++) {
 			output.nodes.add(new Node("Output " + i));
 		}
 		

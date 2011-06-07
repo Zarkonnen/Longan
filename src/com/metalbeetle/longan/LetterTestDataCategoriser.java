@@ -80,8 +80,9 @@ public class LetterTestDataCategoriser implements KeyListener {
 			fr.dispose();
 			return;
 		}
-		ArrayList<LetterRect> rects = lf.find(img);
-		ArrayList<ArrayList<ArrayList<LetterRect>>> rs = chunker.chunk(rects, img);
+		HashMap<String, String> md = new HashMap<String, String>();
+		ArrayList<LetterRect> rects = lf.find(img, md);
+		ArrayList<ArrayList<ArrayList<LetterRect>>> rs = chunker.chunk(rects, img, md);
 		rects.clear();
 		for (ArrayList<ArrayList<LetterRect>> line : rs) {
 			for (ArrayList<LetterRect> word : line) {

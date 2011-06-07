@@ -5,16 +5,30 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 public class Histogram {
-	private final int[] hg;
+	private int[] hg;
+	private int offset = 0;
 
 	public Histogram(int range) {
-		hg = new int[range + 1];
+		hg = new int[range];
 	}
 	
 	public void add(int value) {
 		if (value >= 0 && value < hg.length) {
 			hg[value]++;
 		}
+	}
+	
+	public void convolve(double[] kernel) {
+		int[] newHg = new int[hg.length - kernel.length];
+		offset -= kernel.length - 1;
+		for (int i = 0; i < newHg.length; i++) {
+			double value = 0.0;
+			for (int j = 0; j < kernel.length; j++) {
+				value += kernel[j] * hg[i + j];
+			}
+			newHg[i] = (int) value;
+		}
+		hg = newHg;
 	}
 	
 	public int firstValleyEnd() {
@@ -41,7 +55,7 @@ public class Histogram {
 			}
 		}
 		
-		return valleyEnd;
+		return valleyEnd + offset;
 	}
 	
 	public BufferedImage toImage() {
@@ -50,14 +64,14 @@ public class Histogram {
 			if (hg[i] > max) { max = hg[i]; }
 		}
 		
-		BufferedImage img = new BufferedImage(hg.length, max + 1, BufferedImage.TYPE_INT_RGB);
-		Graphics g = img.getGraphics();
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, hg.length, max + 1);
 		int squash = 1;
 		if (max > 400) {
 			squash = max / 400 + 1;
 		}
+		BufferedImage img = new BufferedImage(hg.length, max / squash, BufferedImage.TYPE_INT_RGB);
+		Graphics g = img.getGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, hg.length, max / squash);
 		g.setColor(Color.BLACK);
 		for (int i = 0; i < hg.length; i++) {
 			g.fillRect(i, (max - hg[i]) / squash, 1, hg[i] / squash);

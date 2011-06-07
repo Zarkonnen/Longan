@@ -5,11 +5,10 @@ import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import javax.imageio.ImageIO;
+import java.util.HashMap;
 
 public class BetterChunker implements Chunker {
 	/*
@@ -28,7 +27,11 @@ public class BetterChunker implements Chunker {
 	 * - go over each line and put all letters that are closer than average together into words
 	 */
 
-	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(ArrayList<LetterRect> rects, BufferedImage img) {
+	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(
+			ArrayList<LetterRect> rects,
+			BufferedImage img,
+			HashMap<String, String> metadata)
+	{
 		// Calculate the inter-quartile mean of sizes.
 		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		for (Rectangle r : rects) {

@@ -17,6 +17,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 	final Lenet4eNet net;
 	
 	static final int OUTPUT_SIZE = 128;
+	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
 	
 	static final String[] LETTERS = {
 		"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
@@ -58,7 +59,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 
 	public NNLetterIdentifier3() {
 		net = new Lenet4eNet();
-		InputStream is = NeuralNetworkLetterIdentifier2.class.getResourceAsStream("data/l4edata3");
+		InputStream is = NNLetterIdentifier3.class.getResourceAsStream("data/l4edata3");
 		try {
 			NetworkIO.input(net.nw, is);
 			is.close();
@@ -67,8 +68,13 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		}
 	}
 
-	public Letter identify(LetterRect r, BufferedImage img) {
-		double[] data = prepare(r, img);
+	public Letter identify(LetterRect r, BufferedImage img, HashMap<String, String> metadata) {
+		int intensityAdjustment = 0;
+		if (metadata.containsKey("letterFinderIntensityBoundary")) {
+			int letterFinderIntensityBoundary = Integer.parseInt(metadata.get("letterFinderIntensityBoundary"));
+			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - letterFinderIntensityBoundary) * 3 / 4;
+		}
+		double[] data = prepare(r, img, intensityAdjustment);
 		HashMap<String, Double> scores = new HashMap<String, Double>();
 		double[] result = net.run(data);
 		for (int l = 0; l < LETTERS.length; l++) {
@@ -83,7 +89,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		return new Letter(r, scores);
 	}
 	
-	static double[] prepare(Rectangle r, BufferedImage src) {
+	static double[] prepare(Rectangle r, BufferedImage src, int intensityAdjustment) {
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
 		Graphics g = scaledSrc.getGraphics();
 		g.setColor(Color.WHITE);
@@ -112,7 +118,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		double[] result = new double[28 * 28];
 		for (int y = 0; y < 28; y++) { for (int x = 0; x < 28; x++) {
 			Color c = new Color(src.getRGB(x, y));
-			result[y * 28 + x] = (c.getRed() + c.getGreen() + c.getBlue()) / 255.0 / 1.5 - 1;
+			result[y * 28 + x] = (c.getRed() + c.getGreen() + c.getBlue() + intensityAdjustment * 3) / 255.0 / 1.5 - 1;
 		} }
 		return result;
 	}

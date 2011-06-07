@@ -34,10 +34,14 @@ public class EnglishDictPostProcessor implements PostProcessor {
 		}
 	}
 	
-	final double maxCoercion = 0.25;
-	final double baseMC = 0.6;
+	final double maxCoercion = 0.2;
+	final double baseMC = 0.3;
 	
-	public void process(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img) {
+	public void process(
+			ArrayList<ArrayList<ArrayList<Letter>>> lines,
+			BufferedImage img,
+			HashMap<String, String> metadata)
+	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
 				process(word);

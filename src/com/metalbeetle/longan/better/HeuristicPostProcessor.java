@@ -4,6 +4,7 @@ import com.metalbeetle.longan.Letter;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class HeuristicPostProcessor implements PostProcessor {
 	static final double NO = 0.000001;
@@ -13,7 +14,15 @@ public class HeuristicPostProcessor implements PostProcessor {
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
 	};
 	
-	public void process(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img) {
+	static final String[] NUMBERS = {
+		"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
+	};
+	
+	public void process(
+			ArrayList<ArrayList<ArrayList<Letter>>> lines,
+			BufferedImage img,
+			HashMap<String, String> metadata)
+	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
 				for (int i = 0; i < word.size(); i++) {
@@ -29,7 +38,9 @@ public class HeuristicPostProcessor implements PostProcessor {
 						)
 					)
 					{
-						l.possibleLetters.put("0", NO);
+						for (String n : NUMBERS) {
+							l.possibleLetters.put(n, NO);
+						}
 					}
 					
 					// Capitals not at the start of words

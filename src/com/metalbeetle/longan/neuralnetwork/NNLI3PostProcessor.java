@@ -8,7 +8,7 @@ import java.util.HashMap;
 
 /** Post-processor to fix the systemic errors NNLetterIdentifier3 makes. */
 public class NNLI3PostProcessor implements PostProcessor {
-	static final double NUDGE = 100;//0.05;
+	static final double NUDGE = 0.25;
 	
 	static final HashMap<String, Double> LOWER_TO_UPPER_SIZE_BOUNDARY = new HashMap<String, Double>();
 	static {
@@ -25,7 +25,11 @@ public class NNLI3PostProcessor implements PostProcessor {
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("z", 1.22);
 	}
 	
-	public void process(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img) {
+	public void process(
+			ArrayList<ArrayList<ArrayList<Letter>>> lines,
+			BufferedImage img,
+			HashMap<String, String> metadata)
+	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
 				for (int i = 0; i < word.size(); i++) {
