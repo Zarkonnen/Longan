@@ -18,6 +18,12 @@ public class Histogram {
 		}
 	}
 	
+	public void set(int value, int amount) {
+		if (value >= 0 && value < hg.length) {
+			hg[value] = amount;
+		}
+	}
+	
 	public void convolve(double[] kernel) {
 		int[] newHg = new int[hg.length - kernel.length];
 		offset -= kernel.length - 1;
@@ -56,6 +62,25 @@ public class Histogram {
 		}
 		
 		return valleyEnd + offset;
+	}
+	
+	public double average() {
+		long sum = 0;
+		long count = 0;
+		for (int i = 0; i < hg.length; i++) {
+			sum += (i + offset) * hg[i];
+			count += hg[i];
+		}
+		return ((double) sum) / ((double) count);
+	}
+	
+	public double stdDev() {
+		double avg = average();
+		long deltas = 0;
+		for (int i = 0; i < hg.length; i++) {
+			deltas += hg[i] * ((i + offset) - avg) * ((i + offset) - avg);
+		}
+		return Math.sqrt(deltas);
 	}
 	
 	public BufferedImage toImage() {

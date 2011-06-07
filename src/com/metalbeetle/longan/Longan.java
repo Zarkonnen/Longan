@@ -4,6 +4,7 @@ import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.EnglishDictPostProcessor;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
+import com.metalbeetle.longan.better.RotationFixingPreProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLetterIdentifier3;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Longan {
+	final List<PreProcessor> preProcessors;
 	final LetterFinder letterFinder;
 	final LetterIdentifier letterIdentifier;
 	final Chunker chunker;
@@ -21,11 +23,14 @@ public class Longan {
 	final PlaintextConverter plaintextConverter;
 
 	public static Longan getDefaultImplementation() {
+		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
+		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new NNLI3PostProcessor());
 		pps.add(new HeuristicPostProcessor());
 		//pps.add(new EnglishDictPostProcessor());
 		return new Longan(
+			preps,
 			new BetterLetterFinder(),
 			new BetterChunker(),
 			new NNLetterIdentifier3(),
@@ -34,7 +39,8 @@ public class Longan {
 		);
 	}
 
-	public Longan(LetterFinder letterFinder, Chunker chunker, LetterIdentifier letterIdentifier, List<PostProcessor> postProcessors, PlaintextConverter plaintextConverter) {
+	public Longan(List<PreProcessor> preProcessors, LetterFinder letterFinder, Chunker chunker, LetterIdentifier letterIdentifier, List<PostProcessor> postProcessors, PlaintextConverter plaintextConverter) {
+		this.preProcessors = preProcessors;
 		this.letterFinder = letterFinder;
 		this.letterIdentifier = letterIdentifier;
 		this.chunker = chunker;
@@ -53,6 +59,9 @@ public class Longan {
 	}
 
 	public ArrayList<ArrayList<ArrayList<Letter>>> process(BufferedImage img, HashMap<String, String> md) {
+		for (PreProcessor pp : preProcessors) {
+			img = pp.process(img, md);
+		}
 		ArrayList<LetterRect> letterRects = letterFinder.find(img, md);
 		ArrayList<ArrayList<ArrayList<LetterRect>>> rectLines = chunker.chunk(letterRects, img, md);
 		ArrayList<ArrayList<ArrayList<Letter>>> lines = new ArrayList<ArrayList<ArrayList<Letter>>>();
