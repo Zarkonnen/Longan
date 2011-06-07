@@ -119,27 +119,16 @@ public class BetterChunker implements Chunker {
 		}
 		
 		// Now calculate the inter-quartile mean between-letter distances.
-		Histogram hg = new Histogram();
-		ArrayList<Integer> distances = new ArrayList<Integer>();
+		Histogram hg = new Histogram(500);
 		for (Line l : lines) {
 			for (int i = 0; i < l.rs.size() - 1; i++) {
 				Rectangle r0 = l.rs.get(i);
 				Rectangle r1 = l.rs.get(i + 1);
-				distances.add(r1.x - (r0.x + r0.width));
 				hg.add(r1.x - (r0.x + r0.width));
 			}
 		}
-		/*try {
-			ImageIO.write(hg.toImage(), "jpg", new File("/Users/zar/Desktop/letter-distance-histogram.jpg"));
-		} catch (Exception e) { e.printStackTrace(); }*/
-		long distSum = 0;
-		for (int d : distances.subList(distances.size() / 4, distances.size() * 3 / 4)) {
-			distSum += d;
-		}
-		double avgDist = ((double) distSum) / (distances.size() / 2);
-		System.out.println("Inter-quartile mean of letter distance: " + avgDist);
-		System.out.println("Histogrammed letter distance divider: " + hg.firstValleyEnd());
-		avgDist = hg.firstValleyEnd();
+		//System.out.println("Histogrammed letter distance divider: " + hg.firstValleyEnd());
+		int letterToWordSpacingBoundary = hg.firstValleyEnd();
 		
 		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
 		for (Line l : lines) {
@@ -150,10 +139,7 @@ public class BetterChunker implements Chunker {
 				LetterRect r0 = l.rs.get(i);
 				LetterRect r1 = l.rs.get(i + 1);
 				int dist = r1.x - (r0.x + r0.width);
-				// Compare the letter distance to the average distance, somewhat modified by the
-				// size of the first of the two letters. (Larger text: larger spacing.)
-				//if (dist > avgDist * 1.25/* * (0.8 + 0.2 * Math.sqrt(r0.width * r0.height) / avgSize)*/) {
-				if (dist > avgDist) {
+				if (dist > letterToWordSpacingBoundary) {
 					rLine.add(word);
 					word = new ArrayList<LetterRect>();
 				}
