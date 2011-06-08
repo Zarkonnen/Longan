@@ -4,6 +4,7 @@ import com.metalbeetle.longan.Histogram;
 import com.metalbeetle.longan.stage.PreProcessor;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 
@@ -36,6 +37,7 @@ public class RotationFixingPreProcessor implements PreProcessor {
 		for (int t = 0; t < TILT_RANGE * 2; t++) {
 			double tilt = (t - TILT_RANGE) * TILT_DELTA;
 			Graphics2D g1 = out1.createGraphics();
+			g1.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			g1.setColor(Color.WHITE);
 			g1.fillRect(0, 0, IMAGE_H, IMAGE_H);
 			g1.translate(IMAGE_H / 2, IMAGE_H / 2);
