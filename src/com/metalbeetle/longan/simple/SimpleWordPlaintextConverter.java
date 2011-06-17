@@ -21,6 +21,7 @@ import com.metalbeetle.longan.stage.PlaintextConverter;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 public class SimpleWordPlaintextConverter implements PlaintextConverter {
 	public String convert(
@@ -32,7 +33,15 @@ public class SimpleWordPlaintextConverter implements PlaintextConverter {
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
 				for (Letter letter : word) {
+					/*System.out.println(letter.bestLetter());
+					for (Map.Entry<String, Double> e : letter.possibleLetters.entrySet()) {
+						System.out.println(e.getKey() + " " + e.getValue());
+					}
+					System.out.println("----------------------------------------");*/
 					sb.append(letter.bestLetter());
+					/*if (letter.bestScore() < 0.85) {
+						sb.append("[?]");
+					}*/
 				}
 				sb.append(" ");
 			}

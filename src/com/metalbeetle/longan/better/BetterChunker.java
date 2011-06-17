@@ -109,8 +109,8 @@ public class BetterChunker implements Chunker {
 		for (Line l : lines) {
 			// Go over letter pairs and coalesce if needed.
 			for (int i = 0; i < l.rs.size() - 1; i++) {
-				Rectangle r0 = l.rs.get(i);
-				Rectangle r1 = l.rs.get(i + 1);
+				LetterRect r0 = l.rs.get(i);
+				LetterRect r1 = l.rs.get(i + 1);
 				if (r0.x + r0.width < r1.x + r1.width) {
 					// r0 ends before r1 does, so the two may overlap, but not completely
 					int overlapPx = r0.x + r0.width - r1.x;
@@ -124,6 +124,8 @@ public class BetterChunker implements Chunker {
 				// They overlap enough: coalesce.
 				//System.out.println("coalescing");
 				r0.add(r1);
+				r0.relativeSize = Math.max(r0.relativeSize, r1.relativeSize);
+				r0.numRegions = r0.numRegions + r1.numRegions;
 				l.rs.remove(i + 1);
 				i--;
 			}

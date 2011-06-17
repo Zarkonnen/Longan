@@ -24,7 +24,7 @@ import java.util.HashMap;
 
 /** Post-processor to fix the systemic errors NNLetterIdentifier3 makes. */
 public class NNLI3PostProcessor implements PostProcessor {
-	static final double NUDGE = 0.25;
+	static final double NUDGE = 0.0001;
 	
 	static final HashMap<String, Double> LOWER_TO_UPPER_SIZE_BOUNDARY = new HashMap<String, Double>();
 	static {
@@ -34,7 +34,7 @@ public class NNLI3PostProcessor implements PostProcessor {
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("o", 1.25);
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("p", 1.5);
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("s", 1.25);
-		LOWER_TO_UPPER_SIZE_BOUNDARY.put("u", 1.22);
+		LOWER_TO_UPPER_SIZE_BOUNDARY.put("u", 1.25);
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("v", 1.22);
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("w", 1.5);
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("x", 1.25);
@@ -53,6 +53,11 @@ public class NNLI3PostProcessor implements PostProcessor {
 					boolean first = i == 0;
 					boolean last = i == word.size() - 1;
 					
+					// l/I/f -> i
+					if (l.bestLetter().matches("[lIf]") && l.location.numRegions == 2) {
+						l.possibleLetters.put("i", l.bestScore() + NUDGE);
+					}
+					
 					// Zero identification
 					if (l.bestLetter().matches("[o0]") &&
 						(
@@ -61,18 +66,18 @@ public class NNLI3PostProcessor implements PostProcessor {
 						)
 					)
 					{
-						l.possibleLetters.put("0", l.bestScore() + NUDGE);						
+						l.possibleLetters.put("0", l.possibleLetters.get("0") + NUDGE);						
 					} else {
-						l.possibleLetters.put("0", l.bestScore() - NUDGE);
+						l.possibleLetters.put("0", l.possibleLetters.get("0") - NUDGE);
 					}
 										
 					//for (String s : NNLetterIdentifier3.CASE_MERGED) {
 					if (NNLetterIdentifier3.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
 						String s = l.bestLetter().toLowerCase();
 						if (l.location.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
-							l.possibleLetters.put(s, l.possibleLetters.get(s) - NUDGE);
+							l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) + NUDGE);
 						} else {
-							l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) - NUDGE);
+							l.possibleLetters.put(s, l.possibleLetters.get(s) + NUDGE);
 						}
 					}
 					
