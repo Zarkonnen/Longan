@@ -19,6 +19,7 @@ package com.metalbeetle.longan;
 import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
+import com.metalbeetle.longan.better.LetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.RotationFixingPreProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLetterIdentifier3;
@@ -30,17 +31,18 @@ import java.util.HashMap;
 import java.util.List;
 
 public class Longan {
-	final List<PreProcessor> preProcessors;
-	final LetterFinder letterFinder;
-	final LetterIdentifier letterIdentifier;
-	final Chunker chunker;
-	final List<PostProcessor> postProcessors;
-	final PlaintextConverter plaintextConverter;
+	public final List<PreProcessor> preProcessors;
+	public final LetterFinder letterFinder;
+	public final LetterIdentifier letterIdentifier;
+	public final Chunker chunker;
+	public final List<PostProcessor> postProcessors;
+	public final PlaintextConverter plaintextConverter;
 
 	public static Longan getDefaultImplementation() {
 		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
 		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
+		pps.add(new LetterSplittingPostProcessor());
 		pps.add(new NNLI3PostProcessor());
 		pps.add(new HeuristicPostProcessor());
 		return new Longan(
@@ -92,7 +94,7 @@ public class Longan {
 		}
 		
 		for (PostProcessor pp : postProcessors) {
-			pp.process(lines, img, md);
+			pp.process(lines, img, md, this);
 		}
 		return lines;
 	}

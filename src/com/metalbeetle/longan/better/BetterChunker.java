@@ -173,12 +173,6 @@ public class BetterChunker implements Chunker {
 		return result;
 	}
 	
-	static class XComparator implements Comparator<LetterRect> {
-		public int compare(LetterRect r0, LetterRect r1) {
-			return r0.x - r1.x;
-		}
-	}
-	
 	class Line {
 		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
 		int verticalCentre = 0;

@@ -17,6 +17,7 @@ package com.metalbeetle.longan.neuralnetwork;
  */
 
 import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.Longan;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -44,7 +45,8 @@ public class NNLI3PostProcessor implements PostProcessor {
 	public void process(
 			ArrayList<ArrayList<ArrayList<Letter>>> lines,
 			BufferedImage img,
-			HashMap<String, String> metadata)
+			HashMap<String, String> metadata,
+			Longan longan)
 	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
