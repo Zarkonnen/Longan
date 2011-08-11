@@ -66,15 +66,27 @@ public class Longan {
 
 	public String recognize(BufferedImage img) {
 		HashMap<String, String> md = new HashMap<String, String>();
-		return plaintextConverter.convert(process(img, md), img, md);
+		ProcessResult pr = process(img, md);
+		return plaintextConverter.convert(pr.lines, pr.img, md);
 	}
 
 	public void visualize(BufferedImage img) {
 		HashMap<String, String> md = new HashMap<String, String>();
-		Visualizer.visualize(process(img, md), img);
+		ProcessResult pr = process(img, md);
+		Visualizer.visualize(pr.lines, pr.img);
+	}
+	
+	public static class ProcessResult {
+		ArrayList<ArrayList<ArrayList<Letter>>> lines;
+		BufferedImage img;
+
+		public ProcessResult(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img) {
+			this.lines = lines;
+			this.img = img;
+		}
 	}
 
-	public ArrayList<ArrayList<ArrayList<Letter>>> process(BufferedImage img, HashMap<String, String> md) {
+	public ProcessResult process(BufferedImage img, HashMap<String, String> md) {
 		for (PreProcessor pp : preProcessors) {
 			img = pp.process(img, md);
 		}
@@ -96,6 +108,6 @@ public class Longan {
 		for (PostProcessor pp : postProcessors) {
 			pp.process(lines, img, md, this);
 		}
-		return lines;
+		return new ProcessResult(lines, img);
 	}
 }

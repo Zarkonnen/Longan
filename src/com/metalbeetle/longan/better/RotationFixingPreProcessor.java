@@ -35,6 +35,9 @@ public class RotationFixingPreProcessor implements PreProcessor {
 		if (Math.abs(rotation) > MIN_ADJUST) {
 			BufferedImage img2 = new BufferedImage(img.getWidth() * 110 / 100, img.getHeight() * 110 / 100, img.getType());
 			Graphics2D g2 = img2.createGraphics();
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g2.setColor(Color.WHITE);
 			g2.fillRect(0, 0, img2.getWidth(), img2.getHeight());
 			g2.translate(img.getWidth() * 5 / 100, img.getHeight() * 5 / 100);
