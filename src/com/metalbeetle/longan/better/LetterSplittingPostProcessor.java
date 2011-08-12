@@ -95,6 +95,7 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 					LinkedList<Point> floodQueue = new LinkedList<Point>();
 					floodQueue.add(new Point(searchX, searchY));
 					floodFill(scan, floodQueue, r, floodID++);
+					/*
 					if (r.x > 0) {
 						r.x--;
 						r.width++;
@@ -111,6 +112,8 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 					}
 					r.x += srcR.x;
 					r.y += srcR.y;
+					 * 
+					 */
 					rs.add(r);
 				}
 			}
@@ -134,6 +137,28 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 					if (!floodQueue.contains(p2)) { floodQueue.add(p2); }
 				}
 			}}
+		}
+		
+		// Fill in mask.
+		if (r.x > 0) {
+			r.x--;
+			r.width++;
+		}
+		if (r.y > 0) {
+			r.y--;
+			r.height++;
+		}
+		if (r.x + r.width < scan[0].length) {
+			r.width++;
+		}
+		if (r.y + r.height < scan.length) {
+			r.height++;
+		}
+		r.mask = new boolean[r.height][r.width];
+		for (int my = 0; my < r.height; my++) {
+			for (int mx = 0; mx < r.width; mx++) {
+				r.mask[my][mx] = scan[r.y + my][r.x + mx] == floodID;
+			}
 		}
 	}
 }

@@ -22,8 +22,36 @@ public class LetterRect extends Rectangle {
 	public double relativeLineOffset = 0.0;
 	public double relativeSize = 1.0;
 	public int numRegions = 1;
+	public boolean[][] mask;
 
 	public LetterRect(int x, int y, int width, int height) {
 		super(x, y, width, height);
+	}
+	
+	public void add(LetterRect lr2) {
+		Rectangle newR = new Rectangle(this);
+		newR.add(lr2);
+		boolean[][] newMask = new boolean[newR.height][newR.width];
+		for (int my = 0; my < newR.height; my++) {
+			for (int mx = 0; mx < newR.width; mx++) {
+				int thisY = newR.y + my - y;
+				int thisX = newR.x + mx - x;
+				if (thisY >= 0 && thisY < height && thisX >= 0 && thisX < width) {
+					newMask[my][mx] |= mask[thisY][thisX];
+				}
+				int lr2Y = newR.y + my - lr2.y;
+				int lr2X = newR.x + mx - lr2.x;
+				if (lr2Y >= 0 && lr2Y < lr2.height && lr2X >= 0 && lr2X < lr2.width) {
+					try {
+						newMask[my][mx] |= lr2.mask[lr2Y][lr2X];
+					} catch (Exception e) {
+						System.out.println("JAM");
+					}
+				}
+			}
+		}
+		
+		mask = newMask;
+		super.add(lr2);
 	}
 }
