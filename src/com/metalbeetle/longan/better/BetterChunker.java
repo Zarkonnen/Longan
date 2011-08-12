@@ -91,17 +91,26 @@ public class BetterChunker implements Chunker {
 			l.add(r);
 			lines.add(l);
 		}
-		for (LetterRect r : pieces) {
+		for (LetterRect piece : pieces) {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
-				double vDist = Math.abs(r.getCenterY() - l.verticalCentre);
+				double vDist = Math.abs(piece.getCenterY() - l.verticalCentre);
+				// Don't add in pieces that are too far away from the line, just ignore them.
+				//double h = l.avgHeight();
+				if (vDist > avgSize) { continue; }
 				if (bestL == null || vDist < bestVDist) {
 					bestVDist = vDist;
 					bestL = l;
 				}
 			}
-			bestL.add(r);
+			if (bestL != null) {
+				bestL.add(piece);
+			}/* else {
+				Line l = new Line();
+				l.add(piece);
+				lines.add(l);
+			}*/
 		}
 		for (Line l : lines) {
 			Collections.sort(l.rs, new XComparator());
@@ -194,6 +203,14 @@ public class BetterChunker implements Chunker {
 				verticalCentre += r2.getCenterY();
 			}
 			verticalCentre /= rs.size();
+		}
+		
+		double avgHeight() {
+			double h = 0;
+			for (Rectangle r2 : rs) {
+				h += r2.height;
+			}
+			return h / rs.size();
 		}
 		
 		double tilt() {
