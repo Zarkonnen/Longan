@@ -41,8 +41,8 @@ public class SimpleWordPlaintextConverter implements PlaintextConverter {
 			for (ArrayList<Letter> word : line) {
 				for (Letter letter : word) {
 					sb.append(letter.bestLetter());
-					/*
-					if (letter.bestScore() < 0.85) {
+					
+					/*if (letter.bestScore() < 0.85) {
 						sb.append("[" + bwi + "]");
 						System.out.println(letter.bestLetter() + "[" + bwi + "]");
 						for (Map.Entry<String, Double> e : letter.possibleLetters.entrySet()) {
@@ -63,8 +63,8 @@ public class SimpleWordPlaintextConverter implements PlaintextConverter {
 							ImageIO.write(img2, "png", new File("/Users/zar/Desktop/re/" + bwi + ".png"));
 						} catch (Exception e) {}
 						bwi++;
-					}
-					*/
+					}*/
+					
 				}
 				sb.append(" ");
 			}

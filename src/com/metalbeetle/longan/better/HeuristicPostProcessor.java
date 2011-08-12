@@ -36,7 +36,7 @@ public class HeuristicPostProcessor implements PostProcessor {
 	};
 	
 	static final String[] NOT_INSIDE_WORDS = {
-		"!", "£", "$", "%", "(", ")", "'", ",", ":", ";", "/", "?", "-",
+		"!", "£", "$", "%", "(", ")", ",", ":", ";", "/", "?", "-",
 	};
 	
 	public void process(
@@ -47,6 +47,14 @@ public class HeuristicPostProcessor implements PostProcessor {
 	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
+				// Check for all-capsiness.
+				int caps = 0;
+				for (Letter l : word) {
+					if (l.bestLetter().matches("[A-Z]")) {
+						caps++;
+					}
+				}
+				boolean allCaps = caps > word.size() / 2;
 				for (int i = 0; i < word.size(); i++) {
 					Letter l = word.get(i);
 					boolean first = i == 0;
@@ -66,9 +74,11 @@ public class HeuristicPostProcessor implements PostProcessor {
 					}
 					
 					// Capitals not at the start of words
-					if (l.bestLetter().matches("[A-Z]") && !first) {
-						for (String cl : CAPS) {
-							l.possibleLetters.put(cl, NO);
+					if (!allCaps) {
+						if (l.bestLetter().matches("[A-Z]") && !first) {
+							for (String cl : CAPS) {
+								l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
+							}
 						}
 					}
 					

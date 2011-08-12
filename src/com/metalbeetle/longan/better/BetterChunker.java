@@ -21,9 +21,11 @@ import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import javax.imageio.ImageIO;
 
 public class BetterChunker implements Chunker {
 	/*
@@ -147,8 +149,17 @@ public class BetterChunker implements Chunker {
 				hg.add(r1.x - (r0.x + r0.width));
 			}
 		}
-		//System.out.println("Histogrammed letter distance divider: " + hg.firstValleyEnd());
-		int letterToWordSpacingBoundary = hg.firstValleyEnd();
+		/*try {
+			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/hg.png"));
+		} catch (Exception e) {}*/
+		
+		hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });
+		hg.convolve(new double[] { 100.0 / hg.count() });
+		/*try {
+			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/hg-b.png"));
+		} catch (Exception e) {}
+		System.out.println("Histogrammed letter distance divider: " + (hg.firstValleyEnd() + 2));*/
+		int letterToWordSpacingBoundary = hg.firstValleyEnd() + 2;
 		
 		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
 		for (Line l : lines) {

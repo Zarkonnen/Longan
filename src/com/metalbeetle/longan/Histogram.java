@@ -40,9 +40,18 @@ public class Histogram {
 		}
 	}
 	
+	public int count() {
+		int c = 0;
+		for (int b : hg) {
+			c += b;
+		}
+		return c;
+	}
+	
 	public void convolve(double[] kernel) {
 		int[] newHg = new int[hg.length - kernel.length];
-		offset -= kernel.length - 1;
+		//offset -= kernel.length - 1;
+		offset -= kernel.length / 2;
 		for (int i = 0; i < newHg.length; i++) {
 			double value = 0.0;
 			for (int j = 0; j < kernel.length; j++) {
@@ -65,7 +74,7 @@ public class Histogram {
 				bestValue = hg[i];
 			}
 		}
-		
+				
 		// Find the end of the valley.
 		int valleyEnd = firstPeak;
 		for (int i = firstPeak + 1; i < hg.length; i++) {
@@ -76,7 +85,7 @@ public class Histogram {
 				bestValue = hg[i];
 			}
 		}
-		
+				
 		return valleyEnd + offset;
 	}
 	
