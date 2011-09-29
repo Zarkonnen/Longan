@@ -35,6 +35,7 @@ public class Main {
 
 		if (args[0].equals("recognize")) {
 			System.out.print(Longan.getDefaultImplementation().recognize(ImageIO.read(new File(args[1]))));
+			//System.out.print(Longan.getFastImplementation().recognize(ImageIO.read(new File(args[1]))));
 		}
 		if (args[0].equals("visualize")) {
 			BufferedImage img = ImageIO.read(new File(args[1]));

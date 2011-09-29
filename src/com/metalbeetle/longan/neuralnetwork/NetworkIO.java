@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
 public class NetworkIO {
 	public static void output(Network nw, OutputStream os) throws IOException {
@@ -39,6 +40,20 @@ public class NetworkIO {
 			for (Weight w : l.weights) {
 				w.value = ois.readDouble();
 			}
+		}
+	}
+	
+	public static void input(ArrayList<Target> ts, InputStream is, int sz) throws IOException {
+		ObjectInputStream ois = new ObjectInputStream(is);
+		int n = ois.readInt();
+		for (int i = 0; i < n; i++) {
+			Target t = new Target();
+			t.letter = ois.readUTF();
+			t.data = new double[sz];
+			for (int j = 0; j < sz; j++) {
+				t.data[j] = ois.readDouble();
+			}
+			ts.add(t);
 		}
 	}
 }

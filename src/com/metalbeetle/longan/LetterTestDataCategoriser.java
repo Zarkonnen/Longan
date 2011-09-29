@@ -41,8 +41,11 @@ public class LetterTestDataCategoriser implements KeyListener {
 	Canvas c;
 	String letter = null;
 	BufferedImage img;
+	BufferedImage letterImg;
 	Rectangle letterR;
 
+	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
+	
 	public LetterTestDataCategoriser(LetterFinder lf, Chunker chunker) {
 		this.lf = lf;
 		this.chunker = chunker;
@@ -68,6 +71,12 @@ public class LetterTestDataCategoriser implements KeyListener {
 				g.setColor(new Color(0, 0, 0, 63));
 				g.fillRect(0, 0, c.getWidth(), c.getHeight());
 				g.drawImage(
+						letterImg,
+						100,
+						100,
+						null
+				);
+				/*g.drawImage(
 						img,
 						100,
 						100,
@@ -79,7 +88,7 @@ public class LetterTestDataCategoriser implements KeyListener {
 						letterR.y + letterR.height,
 						null,
 						null
-				);
+				);*/
 			}
 		});
 		fr.addKeyListener(this);
@@ -103,9 +112,16 @@ public class LetterTestDataCategoriser implements KeyListener {
 			}
 		}
 		
+		int intensityAdjustment = 0;
+		if (md.containsKey("letterFinderIntensityBoundary")) {
+			int letterFinderIntensityBoundary = Integer.parseInt(md.get("letterFinderIntensityBoundary"));
+			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - letterFinderIntensityBoundary) * 3 / 4;
+		}
+		
 		for (LetterRect r : rects) {
 			letter = null;
 			letterR = r;
+			letterImg = Util.cropMaskAndAdjust(img, r, intensityAdjustment);
 			c.repaint();
 			while (letter == null) {
 				synchronized (this) {
@@ -142,9 +158,6 @@ public class LetterTestDataCategoriser implements KeyListener {
 			}
 			
 			try {
-				BufferedImage letterImg = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
-				letterImg.getGraphics().drawImage(img, 0, 0, r.width, r.height, r.x, r.y,
-					r.x + r.width, r.y + r.height, null, null);
 				ImageIO.write(letterImg, "png", new File(charF, n + ".png"));
 				
 				if (!offsetWriters.containsKey(charS)) {

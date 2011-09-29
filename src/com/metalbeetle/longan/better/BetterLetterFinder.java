@@ -24,14 +24,17 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 
-public class BetterLetterFinder implements LetterFinder {
+public class BetterLetterFinder implements LetterFinder {	
 	public ArrayList<LetterRect> find(BufferedImage img, HashMap<String, String> metadata) {
 		Histogram hg = new Histogram(256);
 		
-		for (int y = 0; y < img.getHeight(); y++) {
-			for (int x = 0; x < img.getWidth(); x++) {
+		final int h = img.getHeight();
+		final int w = img.getWidth();
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
 				Color c = new Color(img.getRGB(x, y));
 				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
 				hg.add(intensity);
@@ -45,7 +48,7 @@ public class BetterLetterFinder implements LetterFinder {
 		int intensityBoundary = hg.firstValleyEnd();
 		metadata.put("letterFinderIntensityBoundary", "" + intensityBoundary); 
 				
-		int[][] scan = new int[img.getHeight()][img.getWidth()];
+		int[][] scan = new int[h][w];
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
 				Color c = new Color(img.getRGB(x, y));
@@ -61,7 +64,8 @@ public class BetterLetterFinder implements LetterFinder {
 				if (scan[searchY][searchX] == 1) {
 					LetterRect r = new LetterRect(searchX, searchY, 1, 1);
 					LinkedList<Point> floodQueue = new LinkedList<Point>();
-					floodQueue.add(new Point(searchX, searchY));
+					Point p = new Point(searchX, searchY);
+					floodQueue.add(p);
 					floodFill(scan, floodQueue, r, floodID++);
 					/*if (r.x > 0) {
 						r.x--;
@@ -96,8 +100,9 @@ public class BetterLetterFinder implements LetterFinder {
 				int y2 = y + dy;
 				int x2 = x + dx;
 				if (y2 >= 0 && y2 < scan.length && x2 >= 0 && x2 < scan[0].length && scan[y2][x2] == 1) {
+					scan[y2][x2] = -1; // -1 means "reserved"
 					Point p2 = new Point(x2, y2);
-					if (!floodQueue.contains(p2)) { floodQueue.add(p2); }
+					floodQueue.add(p2);
 				}
 			}}
 		}

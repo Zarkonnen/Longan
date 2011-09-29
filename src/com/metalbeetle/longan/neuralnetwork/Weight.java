@@ -18,24 +18,37 @@ package com.metalbeetle.longan.neuralnetwork;
 
 import java.util.ArrayList;
 
-public class Weight {
+public final class Weight {
 	public double value;
 	public double lastAdjustment;
-	public final ArrayList<Connection> connections = new ArrayList<Connection>();
+	public ArrayList<Connection> connections = new ArrayList<Connection>();
+	
+	Connection[] connectionsA;
+	
+	boolean frozen;
+	
+	void freeze() {
+		if (frozen) { return; }
+		connectionsA = connections.toArray(new Connection[0]);
+		frozen = true;
+	}
 
 	public Weight(double value) {
 		this.value = value;
 	}
 
-	double adjust(double n, double m) {
+	void adjust(double n, double m) {
 		double change = 0.0;
-		for (Connection c : connections) {
-			for (Node input : c.inputs) {
-				change += c.output.delta * input.activation;
+		if (frozen) {
+			for (int i = 0; i < connectionsA.length; i++) {
+				change += connectionsA[i].output.delta * connectionsA[i].input.activation;
+			}
+		} else {
+			for (Connection c : connections) {
+				change += c.output.delta * c.input.activation;
 			}
 		}
 		value += n * change + m * lastAdjustment;
 		lastAdjustment = change;
-		return change;
 	}
 }

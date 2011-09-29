@@ -20,24 +20,17 @@ import java.util.ArrayList;
 
 public class Network {
 	public final ArrayList<Layer> layers;
+	
+	boolean frozen = false;
 
 	public Network(ArrayList<Layer> layers) {
 		this.layers = layers;
 	}
 	
-	public double cutBelowThreshold(double t) {
-		int nCut = 0;
-		double nConns = 0;
-		for (Layer l : layers) {
-			nConns += l.weights.size();
-			for (Weight w : l.weights) {
-				if (Math.abs(w.value) < t) {
-					w.value = 0;
-					nCut++;
-				}
-			}
-		}
-		return nCut / nConns;
+	public void freeze() {
+		if (frozen) { return; }
+		for (Layer l : layers) { l.freeze(); }
+		frozen = true;
 	}
 	
 	public void train(double[] input, double[] target, double n, double m) {
@@ -51,26 +44,50 @@ public class Network {
 	public double[] run(double[] input) {
 		setInput(input);
 		update();
-		double[] output = new double[layers.get(layers.size() - 1).nodes.size()];
-		for (int i = 0; i < output.length; i++) {
-			output[i] = layers.get(layers.size() - 1).nodes.get(i).activation;
+		double[] output;
+		if (frozen) {
+			output = new double[layers.get(layers.size() - 1).nodesA.length];
+			for (int i = 0; i < output.length; i++) {
+				output[i] = layers.get(layers.size() - 1).nodesA[i].activation;
+			}
+		} else {
+			output = new double[layers.get(layers.size() - 1).nodes.size()];
+			for (int i = 0; i < output.length; i++) {
+				output[i] = layers.get(layers.size() - 1).nodes.get(i).activation;
+			}
 		}
 		return output;
 	}
 	
 	public void setInput(double[] inputs) {
-		ArrayList<Node> iNodes = layers.get(0).nodes;
-		assert(inputs.length == iNodes.size());
-		for (int i = 0; i < inputs.length; i++) {
-			iNodes.get(i).activation = inputs[i];
+		if (frozen) {
+			Node[] iNodes = layers.get(0).nodesA;
+			assert(inputs.length == iNodes.length);
+			for (int i = 0; i < inputs.length; i++) {
+				iNodes[i].activation = inputs[i];
+			}
+		} else {
+			ArrayList<Node> iNodes = layers.get(0).nodes;
+			assert(inputs.length == iNodes.size());
+			for (int i = 0; i < inputs.length; i++) {
+				iNodes.get(i).activation = inputs[i];
+			}
 		}
 	}
 	
 	public void setTargets(double[] targets) {
-		ArrayList<Node> outputs = layers.get(layers.size() - 1).nodes;
-		assert(targets.length == outputs.size());
-		for (int i = 0; i < targets.length; i++) {
-			outputs.get(i).delta = targets[i] - outputs.get(i).activation;
+		if (frozen) {
+			Node[] outputs = layers.get(layers.size() - 1).nodesA;
+			assert(outputs.length == targets.length);
+			for (int i = 0; i < targets.length; i++) {
+				outputs[i].delta = targets[i] - outputs[i].activation;
+			}
+		} else {
+			ArrayList<Node> outputs = layers.get(layers.size() - 1).nodes;
+			assert(targets.length == outputs.size());
+			for (int i = 0; i < targets.length; i++) {
+				outputs.get(i).delta = targets[i] - outputs.get(i).activation;
+			}
 		}
 	}
 	
@@ -83,7 +100,6 @@ public class Network {
 	
 	public void adjustWeights(double n, double m) {
 		for (int i = layers.size() - 1; i >= 0; i--) {
-			//System.out.println(layers.get(i).name + " adjusted by " + layers.get(i).adjustWeights(n, m));
 			layers.get(i).adjustWeights(n, m);
 		}
 	}
@@ -92,11 +108,19 @@ public class Network {
 		for (Layer l : layers) { l.update(); }
 	}
 	
-	public String getDetails() {
-		String d = "";
+	public int numWeights() {
+		int n = 0;
 		for (Layer l : layers) {
-			d += l.getDetails() + "\n";
+			n += l.weights.size();
 		}
-		return d;
+		return n;
+	}
+	
+	public int numNodes() {
+		int n = 0;
+		for (Layer l : layers) {
+			n += l.nodes.size();
+		}
+		return n;
 	}
 }

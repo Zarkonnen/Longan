@@ -19,9 +19,25 @@ package com.metalbeetle.longan.neuralnetwork;
 import java.util.ArrayList;
 
 public class Layer {
-	public final ArrayList<Node> nodes;
-	public final ArrayList<Weight> weights;
+	public ArrayList<Node> nodes;
+	public ArrayList<Weight> weights;
 	public final String name;
+	
+	public Node[] nodesA;
+	public Weight[] weightsA;
+	
+	boolean frozen = false;
+	
+	public void freeze() {
+		if (frozen) { return; }
+		for (Node n : nodes) { n.freeze(); }
+		for (Weight w : weights) { w.freeze(); }
+		nodesA = nodes.toArray(new Node[0]);
+		weightsA = weights.toArray(new Weight[0]);
+		frozen = true;
+		nodes = null;
+		weights = null;
+	}
 
 	public Layer(String name) {
 		this.name = name;
@@ -36,24 +52,40 @@ public class Layer {
 	}
 	
 	public void update() {
-		for (Node n : nodes) { n.update(); }
+		if (frozen) {
+			for (int i = 0; i < nodesA.length; i++) {
+				//nodesA[i].update();
+				// qqDPS
+				Node n = nodesA[i];
+				if (n.incomingA.length == 0) { continue; }
+				double sum = 0.0;
+				for (int j = 0; j < n.incomingA.length; j++) {
+					sum += n.incomingA[j].input.activation * n.incomingA[j].weight.value;
+				}
+				n.activation = Math.tanh(sum);
+			}
+		} else {
+			for (Node n : nodes) { n.update(); }
+		}
 	}
 	
 	public void calculateDelta() {
-		for (Node n : nodes) { n.calculateDelta(); }
+		if (frozen) {
+			for (int i = 0; i < nodesA.length; i++) {
+				nodesA[i].calculateDelta();
+			}
+		} else {
+			for (Node n : nodes) { n.calculateDelta(); }
+		}
 	}
 	
-	public double adjustWeights(double n, double m) {
-		double total = 0.0;
-		for (Weight w : weights) { total += Math.abs(w.adjust(n, m)); }
-		return total / weights.size();
-	}
-
-	String getDetails() {
-		String d = "";
-		for (Node n : nodes) {
-			d += n.name + " act=" + n.activation + " delta=" + n.delta + "\n";
+	public void adjustWeights(double n, double m) {
+		if (frozen) {
+			for (int i = 0; i < weightsA.length; i++) {
+				weightsA[i].adjust(n, m);
+			}
+		} else {
+			for (Weight w : weights) { w.adjust(n, m); }
 		}
-		return d;
 	}
 }
