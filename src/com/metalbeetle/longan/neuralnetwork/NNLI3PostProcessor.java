@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 /** Post-processor to fix the systemic errors NNLetterIdentifier3 makes. */
-public class NeuralNetworkLetterIdentifierPostProcessor implements PostProcessor {
+public class NNLI3PostProcessor implements PostProcessor {
 	static final double NUDGE = 0.0001;
 	
 	static final HashMap<String, Double> LOWER_TO_UPPER_SIZE_BOUNDARY = new HashMap<String, Double>();
@@ -73,7 +73,8 @@ public class NeuralNetworkLetterIdentifierPostProcessor implements PostProcessor
 						l.possibleLetters.put("0", l.possibleLetters.get("0") - NUDGE);
 					}
 										
-					if (NeuralNetworkLetterIdentifier.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
+					//for (String s : NNLetterIdentifier3.CASE_MERGED) {
+					if (NNLetterIdentifier3.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
 						String s = l.bestLetter().toLowerCase();
 						if (l.location.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
 							l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) + NUDGE);

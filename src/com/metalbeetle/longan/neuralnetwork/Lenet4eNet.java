@@ -18,15 +18,16 @@ package com.metalbeetle.longan.neuralnetwork;
 
 import java.util.ArrayList;
 import java.util.Random;
+
 import static com.metalbeetle.longan.neuralnetwork.Util.*;
 
-public class NeuralNetwork {
+public class Lenet4eNet {
 	Network nw;
 	Random r = new Random();
 	
-	public NeuralNetwork() {
+	public Lenet4eNet() {
 		Layer input = new Layer("Input");
-		for (int y = 0; y < 20; y++) { for (int x = 0; x < 20; x++) {
+		for (int y = 0; y < 28; y++) { for (int x = 0; x < 28; x++) {
 			input.nodes.add(new Node("input " + y + "/" + x));
 		}}
 		// Bias node!
@@ -35,51 +36,51 @@ public class NeuralNetwork {
 		
 		Layer h1 = new Layer("H1 (conv)");
 		for (int m = 0; m < 6; m++) {
-			for (int y = 0; y < 16; y++) { for (int x = 0; x < 16; x++) {
+			for (int y = 0; y < 24; y++) { for (int x = 0; x < 24; x++) {
 				h1.nodes.add(new Node("H1." + m + " " + y + "/" + x));
 			}}
 		}
 		
 		Layer h2 = new Layer("H2 (subsampling)");
-		for (int m = 0; m < 5; m++) {
-			for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
+		for (int m = 0; m < 6; m++) {
+			for (int y = 0; y < 12; y++) { for (int x = 0; x < 12; x++) {
 				h2.nodes.add(new Node("H2." + m + " " + y + "/" + x));
 			}}
 		}
 		
 		Layer h3 = new Layer("H3 (conv)");
-		for (int m = 0; m < 12; m++) {
-			for (int y = 0; y < 4; y++) { for (int x = 0; x < 4; x++) {
+		for (int m = 0; m < 16; m++) {
+			for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
 				h3.nodes.add(new Node("H3." + m + " " + y + "/" + x));
 			}}
 		}
 		
 		Layer h4 = new Layer("H4 (subsampling)");
-		for (int m = 0; m < 12; m++) {
-			for (int y = 0; y < 2; y++) { for (int x = 0; x < 2; x++) {
+		for (int m = 0; m < 16; m++) {
+			for (int y = 0; y < 4; y++) { for (int x = 0; x < 4; x++) {
 				h4.nodes.add(new Node("H4." + m + " " + y + "/" + x));
 			}}
 		}
 		
 		Layer output = new Layer("Output");
-		for (int i = 0; i < NeuralNetworkLetterIdentifier.OUTPUT_SIZE; i++) {
+		for (int i = 0; i < NNLetterIdentifier3.OUTPUT_SIZE; i++) {
 			output.nodes.add(new Node("Output " + i));
 		}
 		
 		// Connect input to h1
-		for (int m = 0; m < 5; m++) {
+		for (int m = 0; m < 6; m++) {
 			for (int wY = 0; wY < 5; wY++) { for (int wX = 0; wX < 5; wX++) {
 				Weight w = new Weight(rnd(-2.0 / 26, 2.0 / 26));
 				input.weights.add(w);
-				for (int y = 0; y < 16; y++) { for (int x = 0; x < 16; x++) {
+				for (int y = 0; y < 24; y++) { for (int x = 0; x < 24; x++) {
 					new Connection(
 						input.nodes.get(
-							(y + wY) * 20 +
+							(y + wY) * 28 +
 							(x + wX)
 						),
 						h1.nodes.get(
-							m * 16 * 16 +
-							y * 16 +
+							m * 24 * 24 +
+							y * 24 +
 							x
 						),
 						w
@@ -90,12 +91,12 @@ public class NeuralNetwork {
 			// Bias
 			Weight w = new Weight(rnd(-2.0 / 26, 2.0 / 26));
 			input.weights.add(w);
-			for (int y = 0; y < 16; y++) { for (int x = 0; x < 16; x++) {
+			for (int y = 0; y < 24; y++) { for (int x = 0; x < 24; x++) {
 				new Connection(
 					biasN,
 					h1.nodes.get(
-						m * 16 * 16 +
-						y * 16 +
+						m * 24 * 24 +
+						y * 24 +
 						x
 					),
 					w
@@ -104,20 +105,20 @@ public class NeuralNetwork {
 		}
 		
 		// Connect h1 to h2
-		for (int m = 0; m < 5; m++) {
+		for (int m = 0; m < 6; m++) {
 			Weight w = new Weight(0.25);
 			h1.weights.add(w);
-			for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
+			for (int y = 0; y < 12; y++) { for (int x = 0; x < 12; x++) {
 				for (int dy = 0; dy < 2; dy++) { for (int dx = 0; dx < 2; dx++) {
 					new Connection(
 						h1.nodes.get(
-							m * 16 * 16 +
-							(y * 2 + dy) * 16 +
+							m * 24 * 24 +
+							(y * 2 + dy) * 24 +
 							(x * 2 + dx)
 						),
 						h2.nodes.get(
-							m * 8 * 8 +
-							y * 8 +
+							m * 12 * 12 +
+							y * 12 +
 							x
 						),
 						w
@@ -138,22 +139,22 @@ public class NeuralNetwork {
 			{O, O, O, X, X, X, O, O, X, X, X, X, O, X, X, X}
 		};
 		
-		for (int m1 = 0; m1 < 5; m1++) {
-			for (int m3 = 0; m3 < 12; m3++) {
+		for (int m1 = 0; m1 < 6; m1++) {
+			for (int m3 = 0; m3 < 16; m3++) {
 				if (!table[m1][m3]) { continue; }
 				for (int wY = 0; wY < 5; wY++) { for (int wX = 0; wX < 5; wX++) {
 					Weight w = new Weight(rnd(-2.0 / 26, 2.0 / 26));
 					h2.weights.add(w);
-					for (int y = 0; y < 4; y++) { for (int x = 0; x < 4; x++) {
+					for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
 						new Connection(
 							h2.nodes.get(
-								m1 * 8 * 8 +
-								(y + wY) * 8 +
+								m1 * 12 * 12 +
+								(y + wY) * 12 +
 								(x + wX)
 							),
 							h3.nodes.get(
-								m3 * 4 * 4 +
-								y * 4 +
+								m3 * 8 * 8 +
+								y * 8 +
 								x
 							),
 							w
@@ -164,12 +165,12 @@ public class NeuralNetwork {
 				// Add bias
 				Weight w = new Weight(rnd(-2.0 / 26, 2.0 / 26));
 				h2.weights.add(w);
-				for (int y = 0; y < 4; y++) { for (int x = 0; x < 4; x++) {
+				for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
 					new Connection(
 						biasN,
 						h3.nodes.get(
-							m3 * 4 * 4 +
-							y * 4 +
+							m3 * 8 * 8 +
+							y * 8 +
 							x
 						),
 						w
@@ -179,20 +180,20 @@ public class NeuralNetwork {
 		}
 		
 		// Connect h3 to h4
-		for (int m3 = 0; m3 < 12; m3++) {
+		for (int m3 = 0; m3 < 16; m3++) {
 			Weight w = new Weight(0.25);
 			h3.weights.add(w);
-			for (int y = 0; y < 2; y++) { for (int x = 0; x < 2; x++) {
+			for (int y = 0; y < 4; y++) { for (int x = 0; x < 4; x++) {
 				for (int dy = 0; dy < 2; dy++) { for (int dx = 0; dx < 2; dx++) {
 					new Connection(
 						h3.nodes.get(
-							m3 * 4 * 4 +
-							(y * 2 + dy) * 4 +
+							m3 * 8 * 8 +
+							(y * 2 + dy) * 8 +
 							(x * 2 + dx)
 						),
 						h4.nodes.get(
-							m3 * 2 * 2 +
-							y * 2 +
+							m3 * 4 * 4 +
+							y * 4 +
 							x
 						),
 						w
@@ -201,20 +202,17 @@ public class NeuralNetwork {
 			}}
 		}
 		
-		// Connect h4 to output (randomly semifull connection)
-		int x = 0;
+		// Connect h4 to output (full connection)
 		for (Node h4N : h4.nodes) {
 			for (Node oN : output.nodes) {
-				if (Integer.bitCount(x++) % 2 == 0) { continue; }
-				//if (r.nextBoolean()) { continue; }
-				Weight w = new Weight(rnd(-2.0 / 49, 2.0 / 49));
+				Weight w = new Weight(rnd(-2.0 / 193, 2.0 / 193));
 				h4.weights.add(w);
 				new Connection(h4N, oN, w);
 			}
 		}
 		// Add biases to output.
 		for (Node oN : output.nodes) {
-			Weight w = new Weight(rnd(-2.0 / 49, 2.0 / 49));
+			Weight w = new Weight(rnd(-2.0 / 193, 2.0 / 193));
 			h4.weights.add(w);
 			new Connection(biasN, oN, w);
 		}

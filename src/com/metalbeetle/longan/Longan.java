@@ -21,8 +21,8 @@ import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
 import com.metalbeetle.longan.better.LetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.RotationFixingPreProcessor;
-import com.metalbeetle.longan.neuralnetwork.NeuralNetworkLetterIdentifier;
-import com.metalbeetle.longan.neuralnetwork.NeuralNetworkLetterIdentifierPostProcessor;
+import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
+import com.metalbeetle.longan.neuralnetwork.NNLetterIdentifier3;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
 import com.metalbeetle.longan.stage.*;
 import java.awt.image.BufferedImage;
@@ -43,18 +43,18 @@ public class Longan {
 		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());
-		pps.add(new NeuralNetworkLetterIdentifierPostProcessor());
+		pps.add(new NNLI3PostProcessor());
 		pps.add(new HeuristicPostProcessor());
 		return new Longan(
 			preps,
 			new BetterLetterFinder(),
 			new BetterChunker(),
-			new NeuralNetworkLetterIdentifier(),
+			new NNLetterIdentifier3(),
 			pps,
 			new SimpleWordPlaintextConverter()
 		);
 	}
-	
+
 	public Longan(List<PreProcessor> preProcessors, LetterFinder letterFinder, Chunker chunker, LetterIdentifier letterIdentifier, List<PostProcessor> postProcessors, PlaintextConverter plaintextConverter) {
 		this.preProcessors = preProcessors;
 		this.letterFinder = letterFinder;
