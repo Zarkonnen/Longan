@@ -22,14 +22,17 @@ import com.metalbeetle.longan.stage.LetterIdentifier;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import javax.imageio.ImageIO;
 
 public class NNLetterIdentifier3 implements LetterIdentifier {
 	final Lenet4eNet net;
+	final HashMap<String, HashMap<String, DeciderNet>> deciders = new HashMap<String, HashMap<String, DeciderNet>>();
 	
 	static final int OUTPUT_SIZE = 128;
 	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
@@ -44,6 +47,12 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 	static final List<String> CASE_MERGED = Arrays.asList(new String[] {
 		"c", "m", "o", "p", "s", "u", "v", "w", "x", "z"
 	});
+	
+	static final String[][] DECIDERS = {
+		{ "i", "1", "i1" },
+		{ "Z", "2", "Z2" },
+		{ "E", "£", "Epound" }
+	};
 	
 	static final double[][] LETTER_TARGETS = new double[LETTERS.length][OUTPUT_SIZE];
 	static {
@@ -82,6 +91,21 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		} catch (Exception e) {
 			e.printStackTrace(); // qqDPS
 		}
+		for (String[] dec : DECIDERS) {
+			if (!deciders.containsKey(dec[0])) {
+				deciders.put(dec[0], new HashMap<String, DeciderNet>());
+			}
+			DeciderNet dn = new DeciderNet();
+			is = NNLetterIdentifier3.class.getResourceAsStream("data/" + dec[2]);
+			try {
+				NetworkIO.input(dn.nw, is);
+				dn.nw.freeze();
+				is.close();
+			} catch (Exception e) {
+				e.printStackTrace(); // qqDPS
+			}
+			deciders.get(dec[0]).put(dec[1], dn);
+		}
 	}
 
 	public Letter identify(LetterRect r, BufferedImage img, HashMap<String, String> metadata) {
@@ -102,10 +126,67 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 			double score = (OUTPUT_SIZE - error) / OUTPUT_SIZE;
 			scores.put(LETTERS[l], score);
 		}
-		return new Letter(r, scores);
+		Letter l = new Letter(r, scores);
+		//System.out.print(l.bestLetter());
+		String bl = l.bestLetter();
+		if (deciders.containsKey(bl)) {
+			//System.out.print(" <");
+			double bestScore = 0.0;
+			String bestAltLetter = null;
+			for (String altLetter : deciders.get(bl).keySet()) {
+				double res = deciders.get(bl).get(altLetter).run(data)[0];
+				if (res > bestScore) {
+					bestScore = res;
+					bestAltLetter = altLetter;
+				}
+			}
+			if (bestScore > 0.5) {
+				l.possibleLetters.put(bestAltLetter, 1.0); // qqDPS
+			}
+			try {
+				//ImageIO.write(masked(r, img, intensityAdjustment), "png", new File("/Users/zar/Desktop/lets/" +
+				//		(zzz++) + " " + bestScore + ".png"));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		//System.out.println();
+		return l;
 	}
 	
+	int zzz = 0;
+	
 	static int q = 1000;
+	
+	BufferedImage masked(LetterRect r, BufferedImage src, int intensityAdjustment) {
+		// Masking
+		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
+		Graphics g = maskedSrc.getGraphics();
+		g.drawImage(
+				src,
+				0, 0,
+				r.width, r.height,
+				r.x, r.y,
+				r.x + r.width, r.y + r.height,
+				null);
+		int white = Color.WHITE.getRGB();
+		for (int y = 0; y < r.height; y++) {
+			for (int x = 0; x < r.width; x++) {
+				boolean hasMask = false;
+				for (int dy = -1; dy < 2; dy++) { for (int dx = -1; dx < 2; dx++) {
+					int ny = y + dy;
+					int nx = x + dx;
+					if (ny >= 0 && ny < r.height && nx >= 0 && nx < r.width) {
+						hasMask |= r.mask[ny][nx];
+					}
+				}}
+				if (!hasMask) {
+					maskedSrc.setRGB(x, y, white);
+				}
+			}
+		}
+		return maskedSrc;
+	}
 	
 	static double[] prepare(LetterRect r, BufferedImage src, int intensityAdjustment) {
 		// Masking

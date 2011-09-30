@@ -47,21 +47,33 @@ public class HeuristicPostProcessor implements PostProcessor {
 	{
 		for (ArrayList<ArrayList<Letter>> line : lines) {
 			for (ArrayList<Letter> word : line) {
-				// Check for all-capsiness.
+				// Check for all-capsiness and numberiness.
 				int caps = 0;
+				int nums = 0;
 				for (Letter l : word) {
 					if (l.bestLetter().matches("[A-Z]")) {
 						caps++;
 					}
+					if (l.bestLetter().matches("[0-9£$%.-/:]")) {
+						nums++;
+					}
 				}
 				boolean allCaps = caps > word.size() / 2;
+				boolean allNums = nums > word.size() / 2;
 				for (int i = 0; i < word.size(); i++) {
 					Letter l = word.get(i);
 					boolean first = i == 0;
 					boolean last = i == word.size() - 1;
 					
+					if (!allNums) {
+						if (l.bestLetter().matches("[0-9]")) {
+							for (String cl : NUMBERS) {
+								l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
+							}
+						}
+					}
 					// Numbers in words
-					if (l.bestLetter().matches("[0-9]") &&
+					/*if (l.bestLetter().matches("[0-9]") &&
 						(
 							(!first && !word.get(i - 1).bestLetter().matches("[0-9]")) ||
 							(!last && !word.get(i + 1).bestLetter().matches("[0-9]"))
@@ -71,7 +83,7 @@ public class HeuristicPostProcessor implements PostProcessor {
 						for (String n : NUMBERS) {
 							l.possibleLetters.put(n, NO);
 						}
-					}
+					}*/
 					
 					// Capitals not at the start of words
 					if (!allCaps) {
