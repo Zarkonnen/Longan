@@ -22,13 +22,11 @@ import com.metalbeetle.longan.stage.LetterIdentifier;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import javax.imageio.ImageIO;
 
 public class NNLetterIdentifier3 implements LetterIdentifier {
 	final Lenet4eNet net;

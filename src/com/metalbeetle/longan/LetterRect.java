@@ -17,18 +17,20 @@ package com.metalbeetle.longan;
  */
 
 import java.awt.Rectangle;
+import java.util.ArrayList;
 
 public class LetterRect extends Rectangle {
 	public double relativeLineOffset = 0.0;
 	public double relativeSize = 1.0;
-	public int numRegions = 1;
 	public boolean[][] mask;
+	public boolean fragment;
+	public ArrayList<LetterRect> components = new ArrayList<LetterRect>();
 
 	public LetterRect(int x, int y, int width, int height) {
 		super(x, y, width, height);
 	}
 	
-	public void add(LetterRect lr2) {
+	public LetterRect add(LetterRect lr2) {
 		Rectangle newR = new Rectangle(this);
 		newR.add(lr2);
 		boolean[][] newMask = new boolean[newR.height][newR.width];
@@ -51,7 +53,20 @@ public class LetterRect extends Rectangle {
 			}
 		}
 		
-		mask = newMask;
-		super.add(lr2);
+		LetterRect newLR = new LetterRect(newR.x, newR.y, newR.width, newR.height);
+		newLR.mask = newMask;
+		if (components.isEmpty()) {
+			newLR.components.add(this);
+		} else {
+			newLR.components.addAll(components);
+		}
+		if (lr2.components.isEmpty()) {
+			newLR.components.add(lr2);
+		} else {
+			newLR.components.addAll(components);
+		}
+		newLR.relativeSize = Math.sqrt(relativeSize * relativeSize + lr2.relativeSize * lr2.relativeSize);
+		newLR.relativeLineOffset = (relativeLineOffset + lr2.relativeLineOffset) / 2;
+		return newLR;
 	}
 }

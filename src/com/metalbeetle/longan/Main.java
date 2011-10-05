@@ -46,7 +46,7 @@ public class Main {
 				img2.getGraphics().drawImage(img, 0, 0, null);
 				img = img2;
 			}
-			Longan.getDefaultImplementation().visualize(img);
+			img = Longan.getDefaultImplementation().visualize(img);
 			ImageIO.write(img, "jpg", new File(args[2]));
 		}
 		if (args[0].equals("categorize")) {

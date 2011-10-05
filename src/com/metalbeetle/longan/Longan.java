@@ -40,7 +40,7 @@ public class Longan {
 
 	public static Longan getDefaultImplementation() {
 		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
-		preps.add(new RotationFixingPreProcessor());
+		//preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());
 		pps.add(new NNLI3PostProcessor());
@@ -70,10 +70,11 @@ public class Longan {
 		return plaintextConverter.convert(pr.lines, pr.img, md);
 	}
 
-	public void visualize(BufferedImage img) {
+	public BufferedImage visualize(BufferedImage img) {
 		HashMap<String, String> md = new HashMap<String, String>();
 		ProcessResult pr = process(img, md);
 		Visualizer.visualize(pr.lines, pr.img);
+		return pr.img;
 	}
 	
 	public static class ProcessResult {

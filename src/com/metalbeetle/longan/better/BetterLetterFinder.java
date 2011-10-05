@@ -24,7 +24,6 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 
 public class BetterLetterFinder implements LetterFinder {	
@@ -67,20 +66,6 @@ public class BetterLetterFinder implements LetterFinder {
 					Point p = new Point(searchX, searchY);
 					floodQueue.add(p);
 					floodFill(scan, floodQueue, r, floodID++);
-					/*if (r.x > 0) {
-						r.x--;
-						r.width++;
-					}
-					if (r.y > 0) {
-						r.y--;
-						r.height++;
-					}
-					if (r.x + r.width < img.getWidth()) {
-						r.width++;
-					}
-					if (r.y + r.height < img.getHeight()) {
-						r.height++;
-					}*/
 					rs.add(r);
 				}
 			}

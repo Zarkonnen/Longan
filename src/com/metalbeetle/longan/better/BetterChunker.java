@@ -21,13 +21,14 @@ import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import javax.imageio.ImageIO;
 
 public class BetterChunker implements Chunker {
+	static final int MAX_SIZE_OUTLIER = 4;
+	static final double MAX_PIECE_H_DEVIATION = 1.0;
+	
 	/*
 	 * Algorithm:
 	 * - determine average sqrt(rect size) and std deviation
@@ -65,9 +66,10 @@ public class BetterChunker implements Chunker {
 		ArrayList<LetterRect> pieces = new ArrayList<LetterRect>();
 		for (LetterRect r : rects) {
 			double size = Math.sqrt(r.width * r.height);
-			if (size <= avgSize * 4.0 && r.width <= avgSize * 3.0 && r.height <= avgSize * 3.0) {
+			if (size <= avgSize * MAX_SIZE_OUTLIER && r.width <= avgSize * MAX_SIZE_OUTLIER && r.height <= avgSize * MAX_SIZE_OUTLIER) {
 				if (size < avgSize * 0.5) {
 					pieces.add(r);
+					r.fragment = true;
 				} else {
 					wholes.add(r);
 				}
@@ -77,6 +79,7 @@ public class BetterChunker implements Chunker {
 			wholes.addAll(rects);
 			pieces.clear();
 		}
+		// Arrange the wholes into lines.
 		ArrayList<Line> lines = new ArrayList<Line>();
 		rects: for (LetterRect r : wholes) {
 			for (Line l : lines) {
@@ -91,14 +94,14 @@ public class BetterChunker implements Chunker {
 			l.add(r);
 			lines.add(l);
 		}
+		// Add the pieces into the lines.
 		for (LetterRect piece : pieces) {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
 				double vDist = Math.abs(piece.getCenterY() - l.verticalCentre);
 				// Don't add in pieces that are too far away from the line, just ignore them.
-				//double h = l.avgHeight();
-				if (vDist > avgSize) { continue; }
+				if (vDist > l.avgHeight() * MAX_PIECE_H_DEVIATION) { continue; }
 				if (bestL == null || vDist < bestVDist) {
 					bestVDist = vDist;
 					bestL = l;
@@ -106,11 +109,7 @@ public class BetterChunker implements Chunker {
 			}
 			if (bestL != null) {
 				bestL.add(piece);
-			}/* else {
-				Line l = new Line();
-				l.add(piece);
-				lines.add(l);
-			}*/
+			}
 		}
 		for (Line l : lines) {
 			Collections.sort(l.rs, new XComparator());
@@ -133,9 +132,12 @@ public class BetterChunker implements Chunker {
 				}
 				// They overlap enough: coalesce.
 				//System.out.println("coalescing");
-				r0.add(r1);
+				LetterRect newR = r0.add(r1);
+				l.rs.add(i, newR);
+				l.rs.remove(i + 1);
+				/*r0.add(r1);
 				r0.relativeSize = Math.max(r0.relativeSize, r1.relativeSize);
-				r0.numRegions = r0.numRegions + r1.numRegions;
+				r0.numRegions = r0.numRegions + r1.numRegions;*/
 				l.rs.remove(i + 1);
 				i--;
 			}
