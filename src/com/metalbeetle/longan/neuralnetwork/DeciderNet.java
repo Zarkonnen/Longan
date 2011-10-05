@@ -21,7 +21,6 @@ import java.util.Random;
 
 import static com.metalbeetle.longan.neuralnetwork.Util.*;
 
-
 public class DeciderNet {
 	Network nw;
 	Random r = new Random();

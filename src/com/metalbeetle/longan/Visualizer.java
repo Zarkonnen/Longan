@@ -73,6 +73,7 @@ public class Visualizer {
 						wr.add(letter.location);
 					}
 				}
+				if (wr == null) { continue; }
 				g.drawRect(wr.x - (int) thickness * 2, wr.y - (int) thickness * 2, wr.width + (int) thickness * 4, wr.height + (int) thickness * 4);
 			}
 		}

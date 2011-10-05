@@ -26,6 +26,7 @@ import java.util.HashMap;
 public class HeuristicPostProcessor implements PostProcessor {
 	static final double NO = 0.000001;
 	static final double YES = 9.9999999999;
+	static final double NUDGE = 0.001;
 	
 	static final String[] CAPS = {
 		"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
@@ -98,6 +99,25 @@ public class HeuristicPostProcessor implements PostProcessor {
 					if (!first && !last) {
 						for (String n : NOT_INSIDE_WORDS) {
 							l.possibleLetters.put(n, NO);
+						}
+					}
+				}
+				
+				// I/l at start of line / after !.? / alone, but not before i.
+				if (word.size() > 0 && word.get(0).bestLetter().equals("l")) {
+					if (word.size() == 1) {
+						word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+					} else {
+						if (!word.get(1).bestLetter().equals("i")) {
+							if (line.indexOf(word) == 0) {
+								word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+							} else {
+								ArrayList<Letter> prevW = line.get(line.indexOf(word) - 1);
+								Letter prevL = prevW.get(prevW.size() - 1);
+								if (prevL.bestLetter().matches("[!?.]")) {
+									word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+								}
+							}
 						}
 					}
 				}

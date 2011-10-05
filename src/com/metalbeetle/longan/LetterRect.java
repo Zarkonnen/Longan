@@ -69,4 +69,63 @@ public class LetterRect extends Rectangle {
 		newLR.relativeLineOffset = (relativeLineOffset + lr2.relativeLineOffset) / 2;
 		return newLR;
 	}
+
+	public ArrayList<LetterRect> splitAlongXAxis(int xSplit, int splitW) {
+		ArrayList<LetterRect> lrs = new ArrayList<LetterRect>();
+		// Left side
+		boolean[][] newMask = new boolean[height][xSplit];
+		for (int my = 0; my < height; my++) {
+			System.arraycopy(mask[my], 0, newMask[my], 0, xSplit);
+		}
+		LetterRect left = new LetterRect(x, y, xSplit, height);
+		left.mask = newMask;
+		left.relativeLineOffset = relativeLineOffset;
+		left.relativeSize = Math.sqrt(relativeSize * xSplit / width);
+		left.fragment = fragment;
+		left.cropVertically();
+		lrs.add(left);
+		// Right side
+		newMask = new boolean[height][width - xSplit - splitW];
+		for (int my = 0; my < height; my++) {
+			System.arraycopy(mask[my], xSplit + splitW, newMask[my], 0, width - xSplit - splitW);
+		}
+		LetterRect right = new LetterRect(x + xSplit + splitW, y, width - xSplit - splitW, height);
+		right.mask = newMask;
+		right.relativeLineOffset = relativeLineOffset;
+		right.relativeSize = Math.sqrt(relativeSize * (width - xSplit - splitW) / width);
+		right.fragment = fragment;
+		right.cropVertically();
+		lrs.add(right);
+		return lrs;
+	}
+	
+	void cropVertically() {
+		int topCrop = 0;
+		crop: while (topCrop < height) {
+			for (int mx = 0; mx < width; mx++) {
+				if (mask[topCrop][mx]) {
+					break crop;
+				}
+			}
+			topCrop++;
+		}
+		int bottomCrop = 0;
+		crop: while (bottomCrop < height - topCrop) {
+			for (int mx = 0; mx < width; mx++) {
+				if (mask[height - bottomCrop - 1][mx]) {
+					break crop;
+				}
+			}
+			bottomCrop++;
+		}
+		if (topCrop != 0 || bottomCrop != 0) {
+			boolean[][] newMask = new boolean[height - topCrop - bottomCrop][width];
+			System.arraycopy(mask, topCrop, newMask, 0, height - topCrop - bottomCrop);
+			mask = newMask;
+			y += topCrop;
+			height -= topCrop + bottomCrop;
+			relativeLineOffset = 0; // qqDPS
+			relativeSize = Math.sqrt(width * height);
+		}
+	}
 }

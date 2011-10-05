@@ -16,6 +16,7 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.better.AggressiveLetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
@@ -43,6 +44,7 @@ public class Longan {
 		//preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());
+		pps.add(new AggressiveLetterSplittingPostProcessor());
 		pps.add(new NNLI3PostProcessor());
 		pps.add(new HeuristicPostProcessor());
 		return new Longan(
