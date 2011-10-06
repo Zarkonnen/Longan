@@ -41,7 +41,7 @@ public class Longan {
 
 	public static Longan getDefaultImplementation() {
 		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
-		//preps.add(new RotationFixingPreProcessor());
+		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());
 		pps.add(new AggressiveLetterSplittingPostProcessor());

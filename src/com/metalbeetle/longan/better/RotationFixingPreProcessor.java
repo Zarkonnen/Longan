@@ -29,19 +29,25 @@ public class RotationFixingPreProcessor implements PreProcessor {
 	static final double TILT_DELTA = 0.1 / 180 * Math.PI;
 	static final double MIN_ADJUST = 0.4 / 180 * Math.PI;
 	static final int IMAGE_H = 400;
+	static final int MAX_DIM = 280;
 	
 	public BufferedImage process(BufferedImage img, HashMap<String, String> metadata) {
 		double rotation = determineRotation(img, 0.0);
 		if (Math.abs(rotation) > MIN_ADJUST) {
-			BufferedImage img2 = new BufferedImage(img.getWidth() * 110 / 100, img.getHeight() * 110 / 100, img.getType());
+			BufferedImage img2 = new BufferedImage(
+					(int) (img.getWidth() * (1.0 + Math.sin(Math.abs(rotation)))),
+					(int) (img.getHeight() * (1.0 + Math.sin(Math.abs(rotation)))),
+					img.getType()
+			);
 			Graphics2D g2 = img2.createGraphics();
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 			g2.setColor(Color.WHITE);
 			g2.fillRect(0, 0, img2.getWidth(), img2.getHeight());
-			g2.translate(img.getWidth() * 5 / 100, img.getHeight() * 5 / 100);
+			g2.translate(img2.getWidth() / 2, img2.getHeight() / 2);
 			g2.rotate(rotation);
+			g2.translate(-img.getWidth() / 2, -img.getHeight() / 2);
 			g2.drawImage(img, 0, 0, null);
 			img = img2;
 		}
@@ -49,6 +55,18 @@ public class RotationFixingPreProcessor implements PreProcessor {
 	}
 	
 	double determineRotation(BufferedImage img, double initialRotation) {
+		int w = 0;
+		int h = 0;
+		if (img.getWidth() > img.getHeight()) {
+			w = MAX_DIM;
+			h = MAX_DIM * img.getHeight() / img.getWidth();
+		} else {
+			w = MAX_DIM * img.getWidth() / img.getHeight();
+			h = MAX_DIM;
+		}
+		BufferedImage scaled = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		Graphics2D sg = scaled.createGraphics();
+		sg.drawImage(img, 0, 0, w, h, null);
 		BufferedImage out1 = new BufferedImage(IMAGE_H, IMAGE_H, BufferedImage.TYPE_INT_RGB);
 		int intensityBoundary = -1;
 		double bestRotation = initialRotation;
@@ -61,9 +79,8 @@ public class RotationFixingPreProcessor implements PreProcessor {
 			g1.fillRect(0, 0, IMAGE_H, IMAGE_H);
 			g1.translate(IMAGE_H / 2, IMAGE_H / 2);
 			g1.rotate(tilt + initialRotation);
-			g1.translate(-IMAGE_H / 2, -IMAGE_H / 2);
-			g1.scale(((double) IMAGE_H) / img.getWidth(), ((double) IMAGE_H) / img.getHeight());
-			g1.drawImage(img, 0, 0, null);
+			g1.translate(-w / 2, -h / 2);
+			g1.drawImage(scaled, 0, 0, null);
 			
 			if (intensityBoundary == -1) {
 				Histogram hg = new Histogram(256);
