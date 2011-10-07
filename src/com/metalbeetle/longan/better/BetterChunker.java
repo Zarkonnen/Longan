@@ -19,11 +19,17 @@ package com.metalbeetle.longan.better;
 import com.metalbeetle.longan.Histogram;
 import com.metalbeetle.longan.LetterRect;
 import com.metalbeetle.longan.stage.Chunker;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import javax.imageio.ImageIO;
 
 public class BetterChunker implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 4;
@@ -50,21 +56,6 @@ public class BetterChunker implements Chunker {
 			BufferedImage img,
 			HashMap<String, String> metadata)
 	{
-		//ArrayList<Rectangle> colDividers = new ColumnFinder().find(rects, img, metadata);
-		/*try {
-			Graphics2D g = img.createGraphics();
-			g.setStroke(new BasicStroke(6.0f));
-			g.setColor(new Color(255, 0, 0, 191));
-			for (Rectangle r : rs) {
-				g.drawRect(r.x, r.y, r.width, r.height);
-			}
-			ImageIO.write(img, "png", new File("/Users/zar/Desktop/rects.png"));
-		} catch (Exception e) {
-			
-		}
-		System.exit(0);*/
-		
-		// Calculate the inter-quartile mean of sizes.
 		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		for (Rectangle r : rects) {
 			sizes.add((int) Math.sqrt(r.width * r.height));
