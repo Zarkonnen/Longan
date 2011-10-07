@@ -28,31 +28,19 @@ import java.util.LinkedList;
 
 public class BetterLetterFinder implements LetterFinder {	
 	public ArrayList<LetterRect> find(BufferedImage img, HashMap<String, String> metadata) {
-		Histogram hg = new Histogram(256);
-		
-		final int h = img.getHeight();
-		final int w = img.getWidth();
-		for (int y = 0; y < h; y++) {
-			for (int x = 0; x < w; x++) {
-				Color c = new Color(img.getRGB(x, y));
-				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-				hg.add(intensity);
-			}
+		if (!metadata.containsKey("blackWhiteBoundary")) {
+			Histogram hg = IntensityHistogramPreProcessor.generate(img);
+			metadata.put("blackWhiteBoundary", "" + hg.firstValleyEnd());
 		}
+		int blackWhiteBoundary = Integer.parseInt(metadata.get("blackWhiteBoundary"));
+		System.out.println(blackWhiteBoundary);
 		
-		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
-		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
-		hg.convolve(new double[] { 3000.0 / img.getWidth() / img.getHeight() }); // Get rid of minor wobbles
-		
-		int intensityBoundary = hg.firstValleyEnd();
-		metadata.put("letterFinderIntensityBoundary", "" + intensityBoundary); 
-				
-		int[][] scan = new int[h][w];
+		int[][] scan = new int[img.getHeight()][img.getWidth()];
 		for (int y = 0; y < img.getHeight(); y++) {
 			for (int x = 0; x < img.getWidth(); x++) {
 				Color c = new Color(img.getRGB(x, y));
 				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-				scan[y][x] = intensity > intensityBoundary ? 0 : 1;
+				scan[y][x] = intensity > blackWhiteBoundary ? 0 : 1;
 			}
 		}
 

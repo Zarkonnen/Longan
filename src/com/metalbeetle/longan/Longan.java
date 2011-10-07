@@ -20,6 +20,7 @@ import com.metalbeetle.longan.better.AggressiveLetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
+import com.metalbeetle.longan.better.IntensityHistogramPreProcessor;
 import com.metalbeetle.longan.better.LetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.RotationFixingPreProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
@@ -41,6 +42,7 @@ public class Longan {
 
 	public static Longan getDefaultImplementation() {
 		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
+		preps.add(new IntensityHistogramPreProcessor());
 		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());

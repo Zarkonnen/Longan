@@ -108,9 +108,9 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 
 	public Letter identify(LetterRect r, BufferedImage img, HashMap<String, String> metadata) {
 		int intensityAdjustment = 0;
-		if (metadata.containsKey("letterFinderIntensityBoundary")) {
-			int letterFinderIntensityBoundary = Integer.parseInt(metadata.get("letterFinderIntensityBoundary"));
-			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - letterFinderIntensityBoundary) * 3 / 4;
+		if (metadata.containsKey("blackWhiteBoundary")) {
+			int blackWhiteBoundary = Integer.parseInt(metadata.get("blackWhiteBoundary"));
+			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
 		}
 		double[] data = prepare(r, img, intensityAdjustment);
 		HashMap<String, Double> scores = new HashMap<String, Double>();

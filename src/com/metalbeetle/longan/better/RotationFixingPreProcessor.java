@@ -33,6 +33,11 @@ public class RotationFixingPreProcessor implements PreProcessor {
 	
 	public BufferedImage process(BufferedImage img, HashMap<String, String> metadata) {
 		double rotation = determineRotation(img, 0.0);
+		if (!metadata.containsKey("standardWhite")) {
+			Histogram hg = IntensityHistogramPreProcessor.generate(img);
+			metadata.put("standardWhite", "" + hg.postFirstValleyMean());
+		}
+		int standardWhite = Integer.parseInt(metadata.get("standardWhite"));
 		if (Math.abs(rotation) > MIN_ADJUST) {
 			BufferedImage img2 = new BufferedImage(
 					(int) (img.getWidth() * (1.0 + Math.sin(Math.abs(rotation)))),
@@ -43,7 +48,7 @@ public class RotationFixingPreProcessor implements PreProcessor {
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-			g2.setColor(Color.WHITE);
+			g2.setColor(new Color(standardWhite, standardWhite, standardWhite));
 			g2.fillRect(0, 0, img2.getWidth(), img2.getHeight());
 			g2.translate(img2.getWidth() / 2, img2.getHeight() / 2);
 			g2.rotate(rotation);
