@@ -62,6 +62,48 @@ public class Histogram {
 		hg = newHg;
 	}
 	
+	public int postIndexMean(int index) {
+		long sum = 0;
+		long n = 0;
+		for (int i = index - offset; i < hg.length; i++) {
+			sum += i * hg[i];
+			n += hg[i];
+		}
+		int mean = (int) (sum / n);
+		return mean + offset;
+	}
+	
+	public int maxPeak() {
+		int p = 0;
+		for (int i = 0; i < hg.length; i++) {
+			if (hg[i] > p) { p = hg[i]; }
+		}
+		return p;
+	}
+	
+	public int preLastValley(double mult) {
+		// Find the last peak.
+		int bestValue = -1;
+		int lastPeak = hg.length - 1;
+		for (int i = hg.length - 1; i >= 0; i--) {
+			if (hg[i] < bestValue) {
+				break;
+			} else {
+				lastPeak = i;
+				bestValue = hg[i];
+			}
+		}
+				
+		// Find the end of the valley.
+		for (int i = lastPeak - 1; i >= 0; i--) {
+			if (hg[i] < bestValue * mult) {
+				return i + offset;
+			}
+		}
+				
+		return preLastValley(mult + 0.1);
+	}
+	
 	public int firstValleyEnd() {
 		// Find the first peak.
 		int bestValue = -1;
@@ -79,11 +121,10 @@ public class Histogram {
 		int valleyEnd = firstPeak;
 		for (int i = firstPeak + 1; i < hg.length; i++) {
 			if (hg[i] > bestValue) {
-				break;
-			} else {
-				valleyEnd = i;
-				bestValue = hg[i];
+				return valleyEnd + offset;
 			}
+			valleyEnd = i;
+			bestValue = hg[i];
 		}
 				
 		return valleyEnd + offset;
@@ -123,7 +164,13 @@ public class Histogram {
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, hg.length, max / squash);
 		g.setColor(Color.BLACK);
+		int fwe = preLastValley(0.1);
 		for (int i = 0; i < hg.length; i++) {
+			if (i == fwe) {
+				g.setColor(Color.RED);
+			} else {
+				g.setColor(Color.BLACK);
+			}
 			g.fillRect(i, (max - hg[i]) / squash, 1, hg[i] / squash);
 		}
 		return img;

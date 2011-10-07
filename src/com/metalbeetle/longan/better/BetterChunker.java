@@ -50,6 +50,20 @@ public class BetterChunker implements Chunker {
 			BufferedImage img,
 			HashMap<String, String> metadata)
 	{
+		//ArrayList<Rectangle> colDividers = new ColumnFinder().find(rects, img, metadata);
+		/*try {
+			Graphics2D g = img.createGraphics();
+			g.setStroke(new BasicStroke(6.0f));
+			g.setColor(new Color(255, 0, 0, 191));
+			for (Rectangle r : rs) {
+				g.drawRect(r.x, r.y, r.width, r.height);
+			}
+			ImageIO.write(img, "png", new File("/Users/zar/Desktop/rects.png"));
+		} catch (Exception e) {
+			
+		}
+		System.exit(0);*/
+		
 		// Calculate the inter-quartile mean of sizes.
 		ArrayList<Integer> sizes = new ArrayList<Integer>();
 		for (Rectangle r : rects) {
@@ -172,6 +186,34 @@ public class BetterChunker implements Chunker {
 		System.out.println("Histogrammed letter distance divider: " + (hg.firstValleyEnd() + 2));*/
 		int letterToWordSpacingBoundary = hg.firstValleyEnd() + 2;
 		
+		// Now try to subdivide lines into columns. This will need to be done more cleverly in the future.
+		ArrayList<Column> cols = new ArrayList<Column>();
+		for (Line l : lines) {
+			for (int i = 0; i < l.rs.size() - 1; i++) {
+				LetterRect r0 = l.rs.get(i);
+				LetterRect r1 = l.rs.get(i + 1);
+				int dist = r1.x - (r0.x + r0.width);
+				if (dist > letterToWordSpacingBoundary * 4) {
+					// Snap!
+					Line newL = new Line();
+					while (l.rs.size() > i + 1) {
+						newL.add(l.rs.get(i + 1));
+						l.rs.remove(i + 1);
+					}
+					putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
+					l = newL;
+					i = 0;
+				}
+			}
+			
+			putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
+		}
+		
+		lines.clear();
+		for (Column col : cols) {
+			lines.addAll(col.lines);
+		}
+		
 		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
 		for (Line l : lines) {
 			ArrayList<ArrayList<LetterRect>> rLine = new ArrayList<ArrayList<LetterRect>>();
@@ -192,6 +234,46 @@ public class BetterChunker implements Chunker {
 		}
 		
 		return result;
+	}
+	
+	void putLineIntoColumns(ArrayList<Column> cols, Line l, int letterToWordSpacingBoundary) {
+		Column closestCol = null;
+		int closestColDist = Integer.MAX_VALUE;
+		Column insertCol = null;
+		for (Column col : cols) {
+			int xStart = col.xStart();
+			int d = xStart - l.rs.get(0).x;
+			if (Math.abs(d) < closestColDist) {
+				closestCol = col;
+				closestColDist = d;
+			}
+			if (d > 0) {
+				insertCol = col;
+			}
+		}
+		if (closestColDist < letterToWordSpacingBoundary * 4) {
+			closestCol.lines.add(l);
+		} else {
+			Column newCol = new Column();
+			newCol.lines.add(l);
+			if (insertCol == null) {
+				cols.add(newCol);
+			} else {
+				cols.add(cols.indexOf(insertCol), newCol);
+			}
+		}
+	}
+	
+	class Column {
+		ArrayList<Line> lines = new ArrayList<Line>();
+		
+		int xStart() {
+			int xAcc = 0;
+			for (Line l : lines) {
+				xAcc += l.rs.get(0).x;
+			}
+			return xAcc / lines.size();
+		}
 	}
 	
 	class Line {

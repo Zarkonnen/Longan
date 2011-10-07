@@ -32,7 +32,12 @@ public class RotationFixingPreProcessor implements PreProcessor {
 	static final int MAX_DIM = 280;
 	
 	public BufferedImage process(BufferedImage img, HashMap<String, String> metadata) {
-		double rotation = determineRotation(img, 0.0);
+		if (!metadata.containsKey("standardWhite") || !metadata.containsKey("blackWhiteBoundary")) {
+			new IntensityHistogramPreProcessor().process(img, metadata);
+		}
+		int standardWhite = Integer.parseInt(metadata.get("standardWhite"));
+		int blackWhiteBoundary = Integer.parseInt(metadata.get("blackWhiteBoundary"));
+		double rotation = determineRotation(img, 0.0, blackWhiteBoundary);
 		if (Math.abs(rotation) > MIN_ADJUST) {
 			BufferedImage img2 = new BufferedImage(
 					(int) (img.getWidth() * (1.0 + Math.sin(Math.abs(rotation)))),
@@ -43,7 +48,7 @@ public class RotationFixingPreProcessor implements PreProcessor {
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 			g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-			g2.setColor(Color.WHITE);
+			g2.setColor(new Color(standardWhite, standardWhite, standardWhite));
 			g2.fillRect(0, 0, img2.getWidth(), img2.getHeight());
 			g2.translate(img2.getWidth() / 2, img2.getHeight() / 2);
 			g2.rotate(rotation);
@@ -54,7 +59,7 @@ public class RotationFixingPreProcessor implements PreProcessor {
 		return img;
 	}
 	
-	double determineRotation(BufferedImage img, double initialRotation) {
+	double determineRotation(BufferedImage img, double initialRotation, int blackWhiteBoundary) {
 		int w = 0;
 		int h = 0;
 		if (img.getWidth() > img.getHeight()) {
@@ -68,7 +73,6 @@ public class RotationFixingPreProcessor implements PreProcessor {
 		Graphics2D sg = scaled.createGraphics();
 		sg.drawImage(img, 0, 0, w, h, null);
 		BufferedImage out1 = new BufferedImage(IMAGE_H, IMAGE_H, BufferedImage.TYPE_INT_RGB);
-		int intensityBoundary = -1;
 		double bestRotation = initialRotation;
 		double bestStdDev = 0.0;
 		for (int t = 0; t < TILT_RANGE * 2; t++) {
@@ -82,30 +86,13 @@ public class RotationFixingPreProcessor implements PreProcessor {
 			g1.translate(-w / 2, -h / 2);
 			g1.drawImage(scaled, 0, 0, null);
 			
-			if (intensityBoundary == -1) {
-				Histogram hg = new Histogram(256);
-				for (int y = 0; y < out1.getHeight(); y++) {
-					for (int x = 0; x < out1.getWidth(); x++) {
-						Color c = new Color(out1.getRGB(x, y));
-						int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-						hg.add(intensity);
-					}
-				}
-
-				hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
-				hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
-				hg.convolve(new double[] { 3000.0 / out1.getWidth() / out1.getHeight() }); // Get rid of minor wobbles
-
-				intensityBoundary = hg.firstValleyEnd();
-			}
-			
 			Histogram ch = new Histogram(IMAGE_H / 2);
 			for (int y = 0; y < IMAGE_H * 3 / 4; y++) {
 				int contactsHorizontal = 0;
 				for (int x = IMAGE_H / 4; x < IMAGE_H * 3 / 4; x++) {
 					Color c = new Color(out1.getRGB(x, y));
 					int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
-					if (intensity < intensityBoundary) {
+					if (intensity < blackWhiteBoundary) {
 						contactsHorizontal++;
 					}
 				}

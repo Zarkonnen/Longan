@@ -113,9 +113,11 @@ public class HeuristicPostProcessor implements PostProcessor {
 								word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
 							} else {
 								ArrayList<Letter> prevW = line.get(line.indexOf(word) - 1);
-								Letter prevL = prevW.get(prevW.size() - 1);
-								if (prevL.bestLetter().matches("[!?.]")) {
-									word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+								if (!prevW.isEmpty()) {
+									Letter prevL = prevW.get(prevW.size() - 1);
+									if (prevL.bestLetter().matches("[!?.]")) {
+										word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+									}
 								}
 							}
 						}

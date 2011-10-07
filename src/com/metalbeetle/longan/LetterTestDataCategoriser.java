@@ -112,16 +112,16 @@ public class LetterTestDataCategoriser implements KeyListener {
 			}
 		}
 		
-		int intensityAdjustment = 0;
-		if (md.containsKey("letterFinderIntensityBoundary")) {
-			int letterFinderIntensityBoundary = Integer.parseInt(md.get("letterFinderIntensityBoundary"));
-			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - letterFinderIntensityBoundary) * 3 / 4;
+		int blackWhiteBoundary = 0;
+		if (md.containsKey("blackWhiteBoundary")) {
+			int intensityBoundary = Integer.parseInt(md.get("blackWhiteBoundary"));
+			blackWhiteBoundary = (REFERENCE_INTENSITY_BOUNDARY - intensityBoundary) * 3 / 4;
 		}
 		
 		for (LetterRect r : rects) {
 			letter = null;
 			letterR = r;
-			letterImg = Util.cropMaskAndAdjust(img, r, intensityAdjustment);
+			letterImg = Util.cropMaskAndAdjust(img, r, blackWhiteBoundary);
 			c.repaint();
 			while (letter == null) {
 				synchronized (this) {

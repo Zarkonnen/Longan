@@ -7,24 +7,58 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 public class ColumnFinder {
 	public ArrayList<Rectangle> find(ArrayList<LetterRect> rects,
 			BufferedImage img,
 			HashMap<String, String> metadata)
 	{
+		ArrayList<LetterRect> rs2 = new ArrayList<LetterRect>(rects);
+		Collections.sort(rs2, new Comparator<LetterRect>() {
+			public int compare(LetterRect t, LetterRect t1) {
+				return t1.width * t1.height - t.width * t.height;
+			}
+		});
+		List<LetterRect> iq = rs2.subList(rs2.size() / 4, rs2.size() * 3 / 4);
+		int w = 0;
+		int h = 0;
+		for (LetterRect lr : iq) {
+			w += lr.width;
+			h += lr.height;
+		}
+		w /= iq.size();
+		h /= iq.size();
+		
 		// Create B&W map of letters.
-		boolean[][] map = new boolean[img.getHeight()][img.getWidth()];
+		int scale = Math.min(w, h);
+		System.out.println(scale);
+		boolean[][] map = new boolean[img.getHeight() / scale][img.getWidth() / scale];
 		for (LetterRect lr : rects) {
+			if (lr.width > w * 4 || lr.height > h * 4) { continue; }
 			for (int y = 0; y < lr.height; y++) { for (int x = 0; x < lr.width; x++) {
-				map[lr.y + y][lr.x + x] |= lr.mask[y][x];
+				//map[lr.y + y][lr.x + x] |= lr.mask[y][x];
+				if ((lr.y + y) / scale >= map.length || (lr.x + x) / scale >= map[0].length) {
+					continue;
+				}
+				map[(lr.y + y) / scale][(lr.x + x) / scale] = true;
 			}}
 		}
 		
-		return null;
+		return upscale(find(map, 3, 6), scale);
 	}
 	
-	void find(boolean[][] map) {
+	ArrayList<Rectangle> upscale(ArrayList<Rectangle> rs, int scale) {
+		for (Rectangle r : rs) {
+			r.x *= scale;
+			r.y *= scale;
+			r.width *= scale;
+			r.height *= scale;
+		}
+		return rs;
+	}
+	
+	ArrayList<Rectangle> find(boolean[][] map, int minWidth, int minHeight) {
 		// Create pixel endpoint maps.
 		int[][] leftEndpoints = new int[map.length][map[0].length];
 		for (int y = 0; y < leftEndpoints.length; y++) {
@@ -97,88 +131,27 @@ public class ColumnFinder {
 			}
 		}
 		
-		/*System.out.println("leftEndpoints");
-		draw(leftEndpoints);
-		
-		System.out.println("rightEndpoints");
-		draw(rightEndpoints);
-		
-		System.out.println("topEndpoints");
-		draw(topEndpoints);
-		
-		System.out.println("bottomEndpoints");
-		draw(bottomEndpoints);
-		
-		System.out.println("maxLeftEndpoints");
-		draw(maxLeftEndpoints);
-		
-		System.out.println("minRightEndpoints");
-		draw(minRightEndpoints);*/
-		
 		ArrayList<Rectangle> rs = new ArrayList<Rectangle>();
 		for (int x = 0; x < map[0].length; x++) {
-			Rectangle max = new Rectangle(0, 0, 0, 0);
-			for (int y = 0; y < map.length; y++) {
+			ArrayList<Rectangle> subRs = new ArrayList<Rectangle>();
+			lp: for (int y = 0; y < map.length; y++) {
 				int ry = topEndpoints[y][x];
 				int rx = maxLeftEndpoints[y][x];
 				int w = minRightEndpoints[y][x] - rx;
 				int h = y - ry + 1;
-				if (w * h > max.width * max.height) {
-					max.y = ry;
-					max.x = rx;
-					max.width = w;
-					max.height = h;
+				if (w >= minWidth && h >= minHeight) {
+					for (Rectangle r : subRs) {
+						if (Math.abs(r.y - ry) < minHeight / 2 && Math.abs(r.x - rx) < minWidth / 2 && Math.abs(r.width - w) < minWidth / 2) {
+							r.height = h;
+							continue lp;
+						}
+					}
+					subRs.add(new Rectangle(rx, ry, w, h));
 				}
 			}
-			if (max.width * max.height > 0 && (max.width > 1 && max.height > 1) && (max.width > 2 || max.height > 2) && !rs.contains(max)) {
-				rs.add(max);
-			}
+			rs.addAll(subRs);
 		}
 		
-		for (Rectangle r : rs) {
-			System.out.println(r);
-		}
-		
-		System.out.println();
-		
-		Collections.sort(rs, new Comparator<Rectangle>() {
-			public int compare(Rectangle t, Rectangle t1) {
-				return t1.width * t1.height - t.width * t.height;
-			}
-		});
-		
-		System.out.println(rs.get(0));
-		
-		System.out.println();
-	}
-	
-	void draw(int[][] g) {
-		for (int[] l : g) {
-			for (int v : l) { System.out.print(v); }
-			System.out.println();
-		}
-	}
-	
-	boolean contains(Rectangle r, boolean[][] map) {
-		for (int y = 0; y < r.height; y++) { for (int x = 0; x < r.width; x++) {
-			if (map[r.y + y][r.x + x]) { return false; }
-		}}
-		return true;
-	}
-	
-	public static void main(String[] args) {
-		boolean X = true;
-		boolean O = false;
-		boolean[][] grid = {
-			{O,X,O,O,X,X,O,O,O,X},
-			{O,O,O,X,X,O,O,O,O,X},
-			{X,O,O,O,O,O,O,O,O,O},
-			{X,O,X,O,O,O,O,O,O,X},
-			{X,X,O,O,O,O,O,O,X,X},
-			{X,O,X,O,O,O,O,X,O,O},
-			{X,O,O,O,O,O,O,O,O,O},
-			{X,O,O,O,O,X,O,O,O,X}
-		};
-		new ColumnFinder().find(grid);
+		return rs;
 	}
 }
