@@ -29,27 +29,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Random;
 import javax.imageio.ImageIO;
 
 public class BetterChunker implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 4;
 	static final double MAX_PIECE_H_DEVIATION = 1.0;
-	
-	/*
-	 * Algorithm:
-	 * - determine average sqrt(rect size) and std deviation
-	 * - put all rects that are within 2 (?) std devs into a list
-	 * - choose a rectangle and put it into a line
-	 * - pick another rectangle: if it overlaps vertically with at least 10% of a line, add it to
-	 *   that line, otherwise create a new line with it
-	 * - once all such rects are divided up, add the outliers to whichever line is vertically
-	 *   closest
-	 * - sort lines to go from left to right
-	 * - go over each line: if a pair of adjacent letters overlaps horizontally by at least 30%,
-	 *   combine the letters into one
-	 * - now calculate the average horizontal letter distance
-	 * - go over each line and put all letters that are closer than average together into words
-	 */
+	static final double MAX_PIECE_W_DEVIATION = 1.5;
 
 	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(
 			ArrayList<LetterRect> rects,
@@ -66,7 +52,6 @@ public class BetterChunker implements Chunker {
 			sizeSum += sz;
 		}
 		int avgSize = (int) (sizeSum / (rects.size() / 2));
-		//System.out.println("Inter-quartile mean of letter size: " + avgSize);
 		ArrayList<LetterRect> wholes = new ArrayList<LetterRect>();
 		ArrayList<LetterRect> pieces = new ArrayList<LetterRect>();
 		for (LetterRect r : rects) {
@@ -99,14 +84,98 @@ public class BetterChunker implements Chunker {
 			l.add(r);
 			lines.add(l);
 		}
+		
+		// Horizontally sort the lines.
+		for (Line l : lines) {
+			Collections.sort(l.rs, new XComparator());
+		}
+		
+		// Use a histogram to determine the boundary between between-word and between-letter spaces.
+		Histogram hg = new Histogram(500);
+		for (Line l : lines) {
+			for (int i = 0; i < l.rs.size() - 1; i++) {
+				Rectangle r0 = l.rs.get(i);
+				Rectangle r1 = l.rs.get(i + 1);
+				hg.add(r1.x - (r0.x + r0.width));
+			}
+		}
+		
+		hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });
+		hg.convolve(new double[] { 100.0 / hg.count() });
+
+		int letterToWordSpacingBoundary = hg.firstValleyEnd() + 2;
+		
+		// Now try to subdivide lines into columns. This may need to be done more cleverly in the future.
+		ArrayList<Column> cols = new ArrayList<Column>();
+		for (Line l : lines) {
+			for (int i = 0; i < l.rs.size() - 1; i++) {
+				LetterRect r0 = l.rs.get(i);
+				LetterRect r1 = l.rs.get(i + 1);
+				int dist = r1.x - (r0.x + r0.width);
+				if (dist > letterToWordSpacingBoundary * 3) {
+					// Snap the line in two.
+					Line newL = new Line();
+					while (l.rs.size() > i + 1) {
+						newL.add(l.rs.get(i + 1));
+						l.rs.remove(i + 1);
+					}
+					putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
+					l = newL;
+					i = 0;
+				}
+			}
+			
+			putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
+		}
+		
+		// Now some graphical horrors. qqDPS TEMPORARY
+		Graphics2D g = img.createGraphics();
+		g.setStroke(new BasicStroke(3.0f));
+		Random r = new Random();
+		for (Column c : cols) {
+			//Rectangle b = c.boundingBox();
+			g.setColor(new Color(r.nextInt(200), r.nextInt(200), r.nextInt(200), 63));
+			for (Line l : c.lines) {
+				Rectangle b = null;
+				for (LetterRect lr : l.rs) {
+					if (b == null) {
+						b = new Rectangle(lr);
+					} else {
+						b.add(lr);
+					}
+				}
+				g.fillRect(b.x, b.y, b.width, b.height);
+			}
+		}
+		
+		lines.clear();
+		for (Column col : cols) {
+			lines.addAll(col.lines);
+		}
+		
 		// Add the pieces into the lines.
 		for (LetterRect piece : pieces) {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
 				double vDist = Math.abs(piece.getCenterY() - l.verticalCentre);
+				
+				Rectangle b = null;
+				for (LetterRect lr : l.rs) {
+					if (b == null) {
+						b = new Rectangle(lr);
+					} else {
+						b.add(lr);
+					}
+				}
+				double hDist = piece.getCenterX() < b.x
+						? b.x - piece.getCenterX()
+						: piece.getCenterX() > b.x + b.width
+							? piece.getCenterX() - b.x - b.width
+							: 0.0;
+				
 				// Don't add in pieces that are too far away from the line, just ignore them.
-				if (vDist > l.avgHeight() * MAX_PIECE_H_DEVIATION) { continue; }
+				if (vDist > l.avgHeight() * MAX_PIECE_H_DEVIATION || hDist > l.avgWidth() * MAX_PIECE_W_DEVIATION) { continue; }
 				if (bestL == null || vDist < bestVDist) {
 					bestVDist = vDist;
 					bestL = l;
@@ -116,6 +185,7 @@ public class BetterChunker implements Chunker {
 				bestL.add(piece);
 			}
 		}
+		
 		for (Line l : lines) {
 			Collections.sort(l.rs, new XComparator());
 		}
@@ -136,13 +206,9 @@ public class BetterChunker implements Chunker {
 					// r0 ends after r1, so r1 is entirely within r0
 				}
 				// They overlap enough: coalesce.
-				//System.out.println("coalescing");
 				LetterRect newR = r0.add(r1);
 				l.rs.add(i, newR);
 				l.rs.remove(i + 1);
-				/*r0.add(r1);
-				r0.relativeSize = Math.max(r0.relativeSize, r1.relativeSize);
-				r0.numRegions = r0.numRegions + r1.numRegions;*/
 				l.rs.remove(i + 1);
 				i--;
 			}
@@ -150,59 +216,10 @@ public class BetterChunker implements Chunker {
 		
 		// Next, fill in the relativeLineOffset / relativeSize values.
 		for (Line l : lines) {
-			for (LetterRect r : l.rs) {
-				r.relativeLineOffset = (r.getCenterY() - l.verticalCentre) / avgSize;
-				r.relativeSize = Math.sqrt(r.width * r.height) / avgSize;
+			for (LetterRect lr : l.rs) {
+				lr.relativeLineOffset = (lr.getCenterY() - l.verticalCentre) / avgSize;
+				lr.relativeSize = Math.sqrt(lr.width * lr.height) / avgSize;
 			}
-		}
-		
-		// Now calculate the inter-quartile mean between-letter distances.
-		Histogram hg = new Histogram(500);
-		for (Line l : lines) {
-			for (int i = 0; i < l.rs.size() - 1; i++) {
-				Rectangle r0 = l.rs.get(i);
-				Rectangle r1 = l.rs.get(i + 1);
-				hg.add(r1.x - (r0.x + r0.width));
-			}
-		}
-		/*try {
-			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/hg.png"));
-		} catch (Exception e) {}*/
-		
-		hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });
-		hg.convolve(new double[] { 100.0 / hg.count() });
-		/*try {
-			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/hg-b.png"));
-		} catch (Exception e) {}
-		System.out.println("Histogrammed letter distance divider: " + (hg.firstValleyEnd() + 2));*/
-		int letterToWordSpacingBoundary = hg.firstValleyEnd() + 2;
-		
-		// Now try to subdivide lines into columns. This will need to be done more cleverly in the future.
-		ArrayList<Column> cols = new ArrayList<Column>();
-		for (Line l : lines) {
-			for (int i = 0; i < l.rs.size() - 1; i++) {
-				LetterRect r0 = l.rs.get(i);
-				LetterRect r1 = l.rs.get(i + 1);
-				int dist = r1.x - (r0.x + r0.width);
-				if (dist > letterToWordSpacingBoundary * 4) {
-					// Snap!
-					Line newL = new Line();
-					while (l.rs.size() > i + 1) {
-						newL.add(l.rs.get(i + 1));
-						l.rs.remove(i + 1);
-					}
-					putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
-					l = newL;
-					i = 0;
-				}
-			}
-			
-			putLineIntoColumns(cols, l, letterToWordSpacingBoundary);
-		}
-		
-		lines.clear();
-		for (Column col : cols) {
-			lines.addAll(col.lines);
 		}
 		
 		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
@@ -236,7 +253,7 @@ public class BetterChunker implements Chunker {
 			int d = xStart - l.rs.get(0).x;
 			if (Math.abs(d) < closestColDist) {
 				closestCol = col;
-				closestColDist = d;
+				closestColDist = Math.abs(d);
 			}
 			if (d > 0) {
 				insertCol = col;
@@ -265,6 +282,20 @@ public class BetterChunker implements Chunker {
 			}
 			return xAcc / lines.size();
 		}
+		
+		Rectangle boundingBox() {
+			Rectangle bb = null;
+			for (Line l : lines) {
+				for (LetterRect r : l.rs) {
+					if (bb == null) {
+						bb = new Rectangle(r);
+					} else {
+						bb.add(r);
+					}
+				}
+			}
+			return bb;
+		}
 	}
 	
 	class Line {
@@ -286,6 +317,14 @@ public class BetterChunker implements Chunker {
 				h += r2.height;
 			}
 			return h / rs.size();
+		}
+		
+		double avgWidth() {
+			double w = 0;
+			for (Rectangle r2 : rs) {
+				w += r2.width;
+			}
+			return w / rs.size();
 		}
 		
 		double tilt() {

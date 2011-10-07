@@ -69,7 +69,7 @@ public class IntensityHistogramPreProcessor implements PreProcessor {
 			metadata.put("blackWhiteBoundary", "" + bwb);
 		}
 		if (!metadata.containsKey("standardWhite")) {
-			metadata.put("standardWhite", "" + hg.postIndexMean(bwb));
+			metadata.put("standardWhite", "" + Math.min(255, hg.postIndexMean(bwb)));
 		}
 		return img;
 	}

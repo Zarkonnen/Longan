@@ -67,6 +67,7 @@ public class Histogram {
 		long n = 0;
 		for (int i = index - offset; i < hg.length; i++) {
 			n += hg[i];
+			sum += i;
 		}
 		int mean = (int) (sum / n);
 		return mean + offset;
