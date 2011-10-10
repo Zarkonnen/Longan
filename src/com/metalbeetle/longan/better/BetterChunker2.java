@@ -32,10 +32,12 @@ import java.util.HashMap;
 import java.util.Random;
 import javax.imageio.ImageIO;
 
-public class BetterChunker implements Chunker {
+public class BetterChunker2 implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 10; // qqDPS
 	static final double MAX_PIECE_H_DEVIATION = 1.0;
 	static final double MAX_PIECE_W_DEVIATION = 1.5;
+	static final double MAX_WHOLE_X_DIST = 1.6;
+	static final double MAX_WHOLE_Y_DIST = 0.1;
 
 	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(
 			ArrayList<LetterRect> rects,
@@ -71,20 +73,39 @@ public class BetterChunker implements Chunker {
 		}
 		// Arrange the wholes into lines.
 		ArrayList<Line> lines = new ArrayList<Line>();
-		rects: for (LetterRect r : wholes) {
+		lp: for (LetterRect lr : wholes) {
 			for (Line l : lines) {
-				if (l.verticalCentre >= r.y - avgSize * 0.4 &&
-					l.verticalCentre <= r.y + r.height + avgSize * 0.4)
+				if (l.xDist(lr) < MAX_WHOLE_X_DIST * Math.max(avgSize, l.avgWidth()) &&
+					l.yDist(lr) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l.avgHeight()))
 				{
-					l.add(r);
-					continue rects;
+					l.add(lr);
+					continue lp;
 				}
 			}
 			Line l = new Line();
-			l.add(r);
+			l.add(lr);
 			lines.add(l);
 		}
-				
+		
+		// Fuse the lines
+		lp: while (true) {
+			for (Line l1 : lines) {
+				for (Line l2 : lines) {
+					if (l1 == l2) { continue; }
+					if (l1.xDist(l2.boundingRect) < MAX_WHOLE_X_DIST * Math.max(avgSize, l1.avgWidth()) &&
+						l1.yDist(l2.boundingRect) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l1.avgHeight()))
+					{
+						for (LetterRect lr : l2.rs) {
+							l1.add(lr);
+						}
+						lines.remove(l2);
+						continue lp;
+					}
+				}
+			}
+			break;
+		}
+		
 		// Horizontally sort the lines.
 		for (Line l : lines) {
 			Collections.sort(l.rs, new XComparator());
@@ -158,7 +179,7 @@ public class BetterChunker implements Chunker {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
-				double vDist = Math.abs(piece.getCenterY() - l.verticalCentre);
+				double vDist = Math.abs(piece.getCenterY() - l.boundingRect.getCenterY());
 				
 				Rectangle b = null;
 				for (LetterRect lr : l.rs) {
@@ -217,7 +238,7 @@ public class BetterChunker implements Chunker {
 		// Next, fill in the relativeLineOffset / relativeSize values.
 		for (Line l : lines) {
 			for (LetterRect lr : l.rs) {
-				lr.relativeLineOffset = (lr.getCenterY() - l.verticalCentre) / avgSize;
+				lr.relativeLineOffset = (lr.getCenterY() - l.boundingRect.getCenterY()) / avgSize;
 				lr.relativeSize = Math.sqrt(lr.width * lr.height) / avgSize;
 			}
 		}
@@ -300,15 +321,46 @@ public class BetterChunker implements Chunker {
 	
 	class Line {
 		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
-		int verticalCentre = 0;
+		Rectangle boundingRect = null;
 		
 		void add(LetterRect r) {
 			rs.add(r);
-			verticalCentre = 0;
-			for (Rectangle r2 : rs) {
-				verticalCentre += r2.getCenterY();
+			if (boundingRect == null) {
+				boundingRect = new Rectangle(r);
+			} else {
+				boundingRect.add(r);
 			}
-			verticalCentre /= rs.size();
+		}
+		
+		void regenBoundingRect() {
+			boundingRect = null;
+			for (LetterRect lr : rs) {
+				if (boundingRect == null) {
+					boundingRect = new Rectangle(lr);
+				} else {
+					boundingRect.add(lr);
+				}
+			}
+		}
+		
+		int xDist(Rectangle r2) {
+			if (boundingRect.x + boundingRect.width < r2.x) {
+				return r2.x - boundingRect.x - boundingRect.width;
+			}
+			if (r2.x + r2.width < boundingRect.x) {
+				return boundingRect.x - r2.x - r2.width;
+			}
+			return 0;
+		}
+		
+		int yDist(Rectangle r2) {
+			if (boundingRect.y + boundingRect.height < r2.y) {
+				return r2.y - boundingRect.y - boundingRect.height;
+			}
+			if (r2.y + r2.height < boundingRect.y) {
+				return boundingRect.y - r2.y - r2.height;
+			}
+			return 0;
 		}
 		
 		double avgHeight() {
@@ -325,18 +377,6 @@ public class BetterChunker implements Chunker {
 				w += r2.width;
 			}
 			return w / rs.size();
-		}
-		
-		double tilt() {
-			if (rs.size() < 2) { return 0.0; }
-			/*return (rs.get(rs.size() - 1).getCenterY() - rs.get(0).getCenterY()) /
-					(rs.get(rs.size() - 1).getCenterX() - rs.get(0).getCenterX() + 0.001);*/
-			double dYSum = 0;
-			for (int i = 0; i < rs.size() - 1; i++) {
-				dYSum += (rs.get(i + 1).getCenterY() - rs.get(i).getCenterY()) /
-					(rs.get(i + 1).getCenterX() - rs.get(i).getCenterX() + 1);
-			}
-			return dYSum / (rs.size() - 1);
 		}
 	}
 }

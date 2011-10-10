@@ -18,6 +18,7 @@ package com.metalbeetle.longan;
 
 import com.metalbeetle.longan.better.AggressiveLetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.BetterChunker;
+import com.metalbeetle.longan.better.BetterChunker2;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
 import com.metalbeetle.longan.better.IntensityHistogramPreProcessor;
@@ -52,7 +53,7 @@ public class Longan {
 		return new Longan(
 			preps,
 			new BetterLetterFinder(),
-			new BetterChunker(),
+			new BetterChunker2(),
 			new NNLetterIdentifier3(),
 			pps,
 			new SimpleWordPlaintextConverter()
