@@ -16,57 +16,25 @@ package com.metalbeetle.longan.simple;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Column;
 import com.metalbeetle.longan.data.Letter;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.PlaintextConverter;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import javax.imageio.ImageIO;
 
 public class SimpleWordPlaintextConverter implements PlaintextConverter {
-	public String convert(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata)
-	{
+	public String convert(Result result) {
 		StringBuilder sb = new StringBuilder();
-		/*int bwi = 1000;
-		try {
-			ImageIO.write(img, "png", new File("/Users/zar/Desktop/re/img.png"));
-		} catch (Exception e) {}*/
-		for (ArrayList<ArrayList<Letter>> line : lines) {
-			for (ArrayList<Letter> word : line) {
-				for (Letter letter : word) {
-					sb.append(letter.bestLetter());
-					
-					/*if (letter.bestScore() < 0.85) {
-						sb.append("[" + bwi + "]");
-						System.out.println(letter.bestLetter() + "[" + bwi + "]");
-						for (Map.Entry<String, Double> e : letter.possibleLetters.entrySet()) {
-							System.out.println(e.getKey() + " " + e.getValue());
-						}
-						System.out.println("----------------------------------------");
-						BufferedImage img2 = new BufferedImage(letter.location.width,
-								letter.location.height, BufferedImage.TYPE_INT_RGB);
-						Graphics g = img2.getGraphics();
-						g.drawImage(
-							img,
-							0, 0,
-							letter.location.width, letter.location.height,
-							letter.location.x, letter.location.y,
-							letter.location.x + letter.location.width, letter.location.y + letter.location.height,
-							null);
-						try {
-							ImageIO.write(img2, "png", new File("/Users/zar/Desktop/re/" + bwi + ".png"));
-						} catch (Exception e) {}
-						bwi++;
-					}*/
-					
+		for (Column c : result.columns) {
+			for (Line l : c.lines) {
+				for (Word w : l.words) {
+					for (Letter letter : w.letters) {
+						sb.append(letter.bestLetter());
+					}
+					sb.append(" ");
 				}
-				sb.append(" ");
+				sb.append("\n");
 			}
 			sb.append("\n");
 		}

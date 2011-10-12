@@ -18,6 +18,10 @@ package com.metalbeetle.longan.better;
 
 import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -36,36 +40,34 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 	
 	int q = 0;
 	
-	public void process(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata,
-			Longan longan)
-	{
-		for (ArrayList<ArrayList<Letter>> line : lines) {
-			for (ArrayList<Letter> word : line) {
-				lp: for (int i = 0; i < word.size(); i++) {
-					Letter l = word.get(i);
-					double bestScore = l.bestScore();
-					ArrayList<Letter> ls = new ArrayList<Letter>();
-					if (bestScore < LOW_SCORE_BOUNDARY) {
-						ArrayList<Letter> lrs = sawApart(l, img);
-						if (lrs == null) { continue lp; }
-						for (Letter lr : lrs) {
-							if (lr.width == 0 || lr.height == 0) {
-								continue;
+	public void process(Result result, Longan longan) {
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				for (Word word : line.words) {
+					lp: for (int i = 0; i < word.letters.size(); i++) {
+						Letter l = word.letters.get(i);
+						double bestScore = l.bestScore();
+						ArrayList<Letter> ls = new ArrayList<Letter>();
+						if (bestScore < LOW_SCORE_BOUNDARY) {
+							ArrayList<Letter> lrs = sawApart(l, result.img);
+							if (lrs == null) { continue lp; }
+							for (Letter letter : lrs) {
+								if (letter.width == 0 || letter.height == 0) {
+									continue;
+								}
+								Letter newL = longan.letterIdentifier.identify(letter, result);
+								if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
+									newL.bestLetter().equals(l.bestLetter()))
+								{
+									continue lp;
+								}
+								ls.add(newL);
 							}
-							Letter newL = longan.letterIdentifier.identify(lr, img, metadata);
-							if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
-								newL.bestLetter().equals(l.bestLetter()))
-							{
-								continue lp;
-							}
-							ls.add(newL);
+							word.letters.remove(i);
+							word.letters.addAll(i, ls);
+							word.regenBoundingRect();
+							i += ls.size() - 1;
 						}
-						word.remove(i);
-						word.addAll(i, ls);
-						i += ls.size() - 1;
 					}
 				}
 			}

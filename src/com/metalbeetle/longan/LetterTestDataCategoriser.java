@@ -18,6 +18,10 @@ package com.metalbeetle.longan;
 
 import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.fruitbat.atrio.ATRWriter;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.Chunker;
 import com.metalbeetle.longan.stage.LetterFinder;
 import java.awt.Canvas;
@@ -105,11 +109,13 @@ public class LetterTestDataCategoriser implements KeyListener {
 		}
 		HashMap<String, String> md = new HashMap<String, String>();
 		ArrayList<Letter> letters = lf.find(img, md);
-		ArrayList<ArrayList<ArrayList<Letter>>> rs = chunker.chunk(letters, img, md);
+		Result result = chunker.chunk(letters, img, md);
 		letters.clear();
-		for (ArrayList<ArrayList<Letter>> line : rs) {
-			for (ArrayList<Letter> word : line) {
-				letters.addAll(word);
+		for (Column column : result.columns) {
+			for (Line line : column.lines) {
+				for (Word word : line.words) {
+					letters.addAll(word.letters);
+				}
 			}
 		}
 		

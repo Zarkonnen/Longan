@@ -24,6 +24,10 @@ import com.metalbeetle.longan.better.HeuristicPostProcessor;
 import com.metalbeetle.longan.better.IntensityHistogramPreProcessor;
 import com.metalbeetle.longan.better.LetterSplittingPostProcessor;
 import com.metalbeetle.longan.better.RotationFixingPreProcessor;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.neuralnetwork.NNLI3PostProcessor;
 import com.metalbeetle.longan.neuralnetwork.NNLetterIdentifier3;
 import com.metalbeetle.longan.simple.SimpleWordPlaintextConverter;
@@ -70,50 +74,35 @@ public class Longan {
 	}
 
 	public String recognize(BufferedImage img) {
-		HashMap<String, String> md = new HashMap<String, String>();
-		ProcessResult pr = process(img, md);
-		return plaintextConverter.convert(pr.lines, pr.img, md);
+		return plaintextConverter.convert(process(img, new HashMap<String, String>()));
 	}
 
 	public BufferedImage visualize(BufferedImage img) {
-		HashMap<String, String> md = new HashMap<String, String>();
-		ProcessResult pr = process(img, md);
-		Visualizer.visualize(pr.lines, pr.img);
-		return pr.img;
-	}
-	
-	public static class ProcessResult {
-		ArrayList<ArrayList<ArrayList<Letter>>> lines;
-		BufferedImage img;
-
-		public ProcessResult(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img) {
-			this.lines = lines;
-			this.img = img;
-		}
+		Result result = process(img, new HashMap<String, String>());
+		Visualizer.visualize(result);
+		return result.img;
 	}
 
-	public ProcessResult process(BufferedImage img, HashMap<String, String> md) {
+	public Result process(BufferedImage img, HashMap<String, String> md) {
 		for (PreProcessor pp : preProcessors) {
 			img = pp.process(img, md);
 		}
 		ArrayList<Letter> Letters = letterFinder.find(img, md);
-		ArrayList<ArrayList<ArrayList<Letter>>> rectLines = chunker.chunk(Letters, img, md);
-		ArrayList<ArrayList<ArrayList<Letter>>> lines = new ArrayList<ArrayList<ArrayList<Letter>>>();
-		for (ArrayList<ArrayList<Letter>> rectLine : rectLines) {
-			ArrayList<ArrayList<Letter>> line = new ArrayList<ArrayList<Letter>>();
-			lines.add(line);
-			for (ArrayList<Letter> rectWord : rectLine) {
-				ArrayList<Letter> word = new ArrayList<Letter>();
-				line.add(word);
-				for (Letter r : rectWord) {
-					word.add(letterIdentifier.identify(r, img, md));
+		Result result = chunker.chunk(Letters, img, md);
+		
+		for (Column c : result.columns) {
+			for (Line l : c.lines) {
+				for (Word w : l.words) {
+					for (Letter letter : w.letters) {
+						letterIdentifier.identify(letter, result);
+					}
 				}
 			}
 		}
 		
 		for (PostProcessor pp : postProcessors) {
-			pp.process(lines, img, md, this);
+			pp.process(result, this);
 		}
-		return new ProcessResult(lines, img);
+		return result;
 	}
 }

@@ -17,6 +17,7 @@ package com.metalbeetle.longan.neuralnetwork;
  */
 
 import com.metalbeetle.longan.data.Letter;
+import com.metalbeetle.longan.data.Result;
 import com.metalbeetle.longan.stage.LetterIdentifier;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -105,20 +106,20 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		}
 	}
 
-	public Letter identify(Letter letter, BufferedImage img, HashMap<String, String> metadata) {
+	public Letter identify(Letter letter, Result result) {
 		int intensityAdjustment = 0;
-		if (metadata.containsKey("blackWhiteBoundary")) {
-			int blackWhiteBoundary = Integer.parseInt(metadata.get("blackWhiteBoundary"));
+		if (result.metadata.containsKey("blackWhiteBoundary")) {
+			int blackWhiteBoundary = Integer.parseInt(result.metadata.get("blackWhiteBoundary"));
 			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
 		}
-		double[] data = prepare(letter, img, intensityAdjustment);
+		double[] data = prepare(letter, result.img, intensityAdjustment);
 		HashMap<String, Double> scores = new HashMap<String, Double>();
-		double[] result = net.run(data);
+		double[] output = net.run(data);
 		for (int l = 0; l < LETTERS.length; l++) {
 			double[] target = LETTER_TARGETS[l];
 			double error = 0.0;
 			for (int j = 0; j < OUTPUT_SIZE; j++) {
-				error += (result[j] - target[j]) * (result[j] - target[j]);
+				error += (output[j] - target[j]) * (output[j] - target[j]);
 			}
 			double score = (OUTPUT_SIZE - error) / OUTPUT_SIZE;
 			scores.put(LETTERS[l], score);

@@ -18,11 +18,13 @@ package com.metalbeetle.longan.better;
 
 import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.PostProcessor;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 
 /**
  * Post-processor that takes low-scoring letters and checks if they're meant to be multiple letters.
@@ -32,34 +34,32 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 	static final double MIN_IMPROVEMENT = 0.1;
 	static final double ALWAYS_ACCEPT_BOUNDARY = 0.95;
 	
-	public void process(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata,
-			Longan longan)
-	{
-		for (ArrayList<ArrayList<Letter>> line : lines) {
-			for (ArrayList<Letter> word : line) {
-				lp: for (int i = 0; i < word.size(); i++) {
-					Letter l = word.get(i);
-					double bestScore = l.bestScore();
-					if (bestScore < LOW_SCORE_BOUNDARY && l.components.size() > 1) {
-						Collections.sort(l.components, new XComparator());
-						ArrayList<Letter> ls = new ArrayList<Letter>();
-						for (Letter lr : l.components) {
-							// Ignore fragments, they're probably what messed this up.
-							if (lr.fragment) { continue; }
-							Letter newL = longan.letterIdentifier.identify(lr, img, metadata);
-							if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
-								newL.bestLetter().equals(l.bestLetter()))
-							{
-								continue lp;
+	public void process(Result result, Longan longan) {
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				for (Word word : line.words) {
+					lp: for (int i = 0; i < word.letters.size(); i++) {
+						Letter l = word.letters.get(i);
+						double bestScore = l.bestScore();
+						if (bestScore < LOW_SCORE_BOUNDARY && l.components.size() > 1) {
+							Collections.sort(l.components, new LetterXComparator());
+							ArrayList<Letter> ls = new ArrayList<Letter>();
+							for (Letter lr : l.components) {
+								// Ignore fragments, they're probably what messed this up.
+								if (lr.fragment) { continue; }
+								Letter newL = longan.letterIdentifier.identify(lr, result);
+								if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
+									newL.bestLetter().equals(l.bestLetter()))
+								{
+									continue lp;
+								}
+								ls.add(newL);
 							}
-							ls.add(newL);
+							word.letters.remove(i);
+							word.letters.addAll(i, ls);
+							word.regenBoundingRect();
+							i += ls.size() - 1;
 						}
-						word.remove(i);
-						word.addAll(i, ls);
-						i += ls.size() - 1;
 					}
 				}
 			}

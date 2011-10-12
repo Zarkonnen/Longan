@@ -16,16 +16,9 @@ package com.metalbeetle.longan.stage;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.metalbeetle.longan.data.Result;
 
 public interface PostProcessor {
-	public void process(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata,
-			Longan longan);
+	public void process(Result result, Longan longan);
 }

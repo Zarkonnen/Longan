@@ -18,10 +18,11 @@ package com.metalbeetle.longan.better;
 
 import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.PostProcessor;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashMap;
 
 public class HeuristicPostProcessor implements PostProcessor {
 	static final double NO = 0.000001;
@@ -40,83 +41,80 @@ public class HeuristicPostProcessor implements PostProcessor {
 		"!", "£", "$", "%", "(", ")", ",", ":", ";", "/", "?", "-",
 	};
 	
-	public void process(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata,
-			Longan longan)
-	{
-		for (ArrayList<ArrayList<Letter>> line : lines) {
-			for (ArrayList<Letter> word : line) {
-				// Check for all-capsiness and numberiness.
-				int caps = 0;
-				int nums = 0;
-				for (Letter l : word) {
-					if (l.bestLetter().matches("[A-Z]")) {
-						caps++;
-					}
-					if (l.bestLetter().matches("[0-9£$%.-/:]")) {
-						nums++;
-					}
-				}
-				boolean allCaps = caps > word.size() / 2;
-				boolean allNums = nums > word.size() / 2;
-				for (int i = 0; i < word.size(); i++) {
-					Letter l = word.get(i);
-					boolean first = i == 0;
-					boolean last = i == word.size() - 1;
-					
-					if (!allNums) {
-						if (l.bestLetter().matches("[0-9]")) {
-							for (String cl : NUMBERS) {
-								l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
-							}
+	public void process(Result result, Longan longan) {
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				for (Word word : line.words) {
+					// Check for all-capsiness and numberiness.
+					int caps = 0;
+					int nums = 0;
+					for (Letter l : word.letters) {
+						if (l.bestLetter().matches("[A-Z]")) {
+							caps++;
+						}
+						if (l.bestLetter().matches("[0-9£$%.-/:]")) {
+							nums++;
 						}
 					}
-					// Numbers in words
-					/*if (l.bestLetter().matches("[0-9]") &&
-						(
-							(!first && !word.get(i - 1).bestLetter().matches("[0-9]")) ||
-							(!last && !word.get(i + 1).bestLetter().matches("[0-9]"))
+					boolean allCaps = caps > word.letters.size() / 2;
+					boolean allNums = nums > word.letters.size() / 2;
+					for (int i = 0; i < word.letters.size(); i++) {
+						Letter l = word.letters.get(i);
+						boolean first = i == 0;
+						boolean last = i == word.letters.size() - 1;
+
+						if (!allNums) {
+							if (l.bestLetter().matches("[0-9]")) {
+								for (String cl : NUMBERS) {
+									l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
+								}
+							}
+						}
+						// Numbers in words
+						/*if (l.bestLetter().matches("[0-9]") &&
+							(
+								(!first && !word.get(i - 1).bestLetter().matches("[0-9]")) ||
+								(!last && !word.get(i + 1).bestLetter().matches("[0-9]"))
+							)
 						)
-					)
-					{
-						for (String n : NUMBERS) {
-							l.possibleLetters.put(n, NO);
+						{
+							for (String n : NUMBERS) {
+								l.possibleLetters.put(n, NO);
+							}
+						}*/
+
+						// Capitals not at the start of words
+						if (!allCaps) {
+							if (l.bestLetter().matches("[A-Z]") && !first) {
+								for (String cl : CAPS) {
+									l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
+								}
+							}
 						}
-					}*/
-					
-					// Capitals not at the start of words
-					if (!allCaps) {
-						if (l.bestLetter().matches("[A-Z]") && !first) {
-							for (String cl : CAPS) {
-								l.possibleLetters.put(cl, l.possibleLetters.get(cl) * 0.8);
+
+						// Most symbols can't be inside words.
+						if (!first && !last) {
+							for (String n : NOT_INSIDE_WORDS) {
+								l.possibleLetters.put(n, NO);
 							}
 						}
 					}
-					
-					// Most symbols can't be inside words.
-					if (!first && !last) {
-						for (String n : NOT_INSIDE_WORDS) {
-							l.possibleLetters.put(n, NO);
-						}
-					}
-				}
-				
-				// I/l at start of line / after !.? / alone, but not before i.
-				if (word.size() > 0 && word.get(0).bestLetter().equals("l")) {
-					if (word.size() == 1) {
-						word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
-					} else {
-						if (!word.get(1).bestLetter().equals("i")) {
-							if (line.indexOf(word) == 0) {
-								word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
-							} else {
-								ArrayList<Letter> prevW = line.get(line.indexOf(word) - 1);
-								if (!prevW.isEmpty()) {
-									Letter prevL = prevW.get(prevW.size() - 1);
-									if (prevL.bestLetter().matches("[!?.]")) {
-										word.get(0).possibleLetters.put("I", word.get(0).bestScore() + NUDGE);
+
+					// I/l at start of line / after !.? / alone, but not before i.
+					if (word.letters.size() > 0 && word.letters.get(0).bestLetter().equals("l")) {
+						if (word.letters.size() == 1) {
+							word.letters.get(0).possibleLetters.put("I", word.letters.get(0).bestScore() + NUDGE);
+						} else {
+							if (!word.letters.get(1).bestLetter().equals("i")) {
+								if (line.words.indexOf(word) == 0) {
+									word.letters.get(0).possibleLetters.put("I", word.letters.get(0).bestScore() + NUDGE);
+								} else {
+									Word prevW = line.words.get(line.words.indexOf(word) - 1);
+									if (!prevW.letters.isEmpty()) {
+										Letter prevL = prevW.letters.get(prevW.letters.size() - 1);
+										if (prevL.bestLetter().matches("[!?.]")) {
+											word.letters.get(0).possibleLetters.put("I", word.letters.get(0).bestScore() + NUDGE);
+										}
 									}
 								}
 							}

@@ -17,9 +17,8 @@ package com.metalbeetle.longan.stage;
  */
 
 import com.metalbeetle.longan.data.Letter;
-import java.awt.image.BufferedImage;
-import java.util.HashMap;
+import com.metalbeetle.longan.data.Result;
 
 public interface LetterIdentifier {
-	public Letter identify(Letter r, BufferedImage img, HashMap<String, String> metadata);
+	public Letter identify(Letter l, Result result);
 }

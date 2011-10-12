@@ -16,11 +16,8 @@ package com.metalbeetle.longan.stage;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.data.Letter;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.metalbeetle.longan.data.Result;
 
 public interface PlaintextConverter {
-	public String convert(ArrayList<ArrayList<ArrayList<Letter>>> lines, BufferedImage img, HashMap<String, String> metadata);
+	public String convert(Result result);
 }

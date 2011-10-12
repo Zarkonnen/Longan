@@ -17,10 +17,11 @@ package com.metalbeetle.longan.stage;
  */
 
 import com.metalbeetle.longan.data.Letter;
+import com.metalbeetle.longan.data.Result;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public interface Chunker {
-	public ArrayList<ArrayList<ArrayList<Letter>>> chunk(ArrayList<Letter> rects, BufferedImage img, HashMap<String, String> metadata);
+	public Result chunk(ArrayList<Letter> rects, BufferedImage img, HashMap<String, String> metadata);
 }

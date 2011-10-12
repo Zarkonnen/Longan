@@ -18,9 +18,11 @@ package com.metalbeetle.longan.neuralnetwork;
 
 import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
+import com.metalbeetle.longan.data.Column;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import com.metalbeetle.longan.stage.PostProcessor;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 /** Post-processor to fix the systemic errors NNLetterIdentifier3 makes. */
@@ -42,51 +44,48 @@ public class NNLI3PostProcessor implements PostProcessor {
 		LOWER_TO_UPPER_SIZE_BOUNDARY.put("z", 1.22);
 	}
 	
-	public void process(
-			ArrayList<ArrayList<ArrayList<Letter>>> lines,
-			BufferedImage img,
-			HashMap<String, String> metadata,
-			Longan longan)
-	{
-		for (ArrayList<ArrayList<Letter>> line : lines) {
-			for (ArrayList<Letter> word : line) {
-				for (int i = 0; i < word.size(); i++) {
-					Letter l = word.get(i);
-					boolean first = i == 0;
-					boolean last = i == word.size() - 1;
-					
-					// l/I/f -> i
-					if (l.bestLetter().matches("[lIf]") && l.components.size() >= 2) {
-						l.possibleLetters.put("i", l.bestScore() + NUDGE);
-					}
-					
-					// Zero identification
-					if (l.bestLetter().matches("[o0]") &&
-						(
-							(!first && word.get(i - 1).bestLetter().matches("[0-9]")) ||
-							(!last && word.get(i + 1).bestLetter().matches("[0-9]"))
-						)
-					)
-					{
-						l.possibleLetters.put("0", l.possibleLetters.get("0") + NUDGE);						
-					} else {
-						l.possibleLetters.put("0", l.possibleLetters.get("0") - NUDGE);
-					}
-										
-					//for (String s : NNLetterIdentifier3.CASE_MERGED) {
-					if (NNLetterIdentifier3.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
-						String s = l.bestLetter().toLowerCase();
-						if (l.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
-							l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) + NUDGE);
-						} else {
-							l.possibleLetters.put(s, l.possibleLetters.get(s) + NUDGE);
+	public void process(Result result, Longan longan) {
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				for (Word word : line.words) {
+					for (int i = 0; i < word.letters.size(); i++) {
+						Letter l = word.letters.get(i);
+						boolean first = i == 0;
+						boolean last = i == word.letters.size() - 1;
+
+						// l/I/f -> i
+						if (l.bestLetter().matches("[lIf]") && l.components.size() >= 2) {
+							l.possibleLetters.put("i", l.bestScore() + NUDGE);
 						}
-					}
-					
-					// Comma/single quote identification
-					if (l.bestLetter().matches("[,']")) {
-						l.possibleLetters.put(l.relativeLineOffset > 0 ? "," : "'",
-								l.bestScore() + NUDGE);
+
+						// Zero identification
+						if (l.bestLetter().matches("[o0]") &&
+							(
+								(!first && word.letters.get(i - 1).bestLetter().matches("[0-9]")) ||
+								(!last && word.letters.get(i + 1).bestLetter().matches("[0-9]"))
+							)
+						)
+						{
+							l.possibleLetters.put("0", l.possibleLetters.get("0") + NUDGE);						
+						} else {
+							l.possibleLetters.put("0", l.possibleLetters.get("0") - NUDGE);
+						}
+
+						//for (String s : NNLetterIdentifier3.CASE_MERGED) {
+						if (NNLetterIdentifier3.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
+							String s = l.bestLetter().toLowerCase();
+							if (l.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
+								l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) + NUDGE);
+							} else {
+								l.possibleLetters.put(s, l.possibleLetters.get(s) + NUDGE);
+							}
+						}
+
+						// Comma/single quote identification
+						if (l.bestLetter().matches("[,']")) {
+							l.possibleLetters.put(l.relativeLineOffset > 0 ? "," : "'",
+									l.bestScore() + NUDGE);
+						}
 					}
 				}
 			}

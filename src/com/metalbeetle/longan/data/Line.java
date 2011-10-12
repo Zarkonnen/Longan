@@ -1,34 +1,28 @@
 package com.metalbeetle.longan.data;
 
-import com.metalbeetle.longan.data.Letter;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
 public class Line {
-	public ArrayList<Letter> rs = new ArrayList<Letter>();
+	public ArrayList<Word> words = new ArrayList<Word>();
 	public Rectangle boundingRect = null;
 
-	public void add(Letter r) {
-		rs.add(r);
+	public void add(Word w) {
+		words.add(w);
 		if (boundingRect == null) {
-			boundingRect = new Rectangle(r);
+			boundingRect = new Rectangle(w.boundingRect);
 		} else {
-			boundingRect.add(r);
+			boundingRect.add(w.boundingRect);
 		}
-	}
-	
-	public void remove(Letter r) {
-		rs.remove(r);
-		regenBoundingRect();
 	}
 
 	public void regenBoundingRect() {
 		boundingRect = null;
-		for (Letter lr : rs) {
+		for (Word w : words) {
 			if (boundingRect == null) {
-				boundingRect = new Rectangle(lr);
+				boundingRect = new Rectangle(w.boundingRect);
 			} else {
-				boundingRect.add(lr);
+				boundingRect.add(w.boundingRect);
 			}
 		}
 	}
@@ -53,19 +47,27 @@ public class Line {
 		return 0;
 	}
 
-	public double avgHeight() {
+	public double avgLetterHeight() {
 		double h = 0;
-		for (Rectangle r2 : rs) {
-			h += r2.height;
+		int n = 0;
+		for (Word w : words) {
+			for (Letter l : w.letters) {
+				h += l.height;
+			}
+			n += w.letters.size();
 		}
-		return h / rs.size();
+		return h / n;
 	}
 
-	public double avgWidth() {
+	public double avgLetterWidth() {
 		double w = 0;
-		for (Rectangle r2 : rs) {
-			w += r2.width;
+		int n = 0;
+		for (Word word : words) {
+			for (Letter l : word.letters) {
+				w += l.width;
+			}
+			n += word.letters.size();
 		}
-		return w / rs.size();
+		return w / n;
 	}
 }

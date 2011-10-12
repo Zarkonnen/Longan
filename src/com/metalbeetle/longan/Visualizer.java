@@ -16,7 +16,11 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Column;
 import com.metalbeetle.longan.data.Letter;
+import com.metalbeetle.longan.data.Line;
+import com.metalbeetle.longan.data.Result;
+import com.metalbeetle.longan.data.Word;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -25,57 +29,55 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 public class Visualizer {
-	public static void visualize(ArrayList<ArrayList<ArrayList<Letter>>> out, BufferedImage img) {
-		Graphics2D g = img.createGraphics();
+	public static void visualize(Result result) {
+		Graphics2D g = result.img.createGraphics();
 
-		float thickness = (img.getWidth() < img.getHeight() ? img.getWidth() : img.getHeight()) / 500f;
+		float thickness = (result.img.getWidth() < result.img.getHeight() ? result.img.getWidth() : result.img.getHeight()) / 500f;
 		if (thickness < 1.0f) { thickness = 1.0f; }
 		g.setStroke(new BasicStroke(thickness));
 
 		// Letter positions
 		g.setColor(new Color(255, 0, 0, 191));
-		for (ArrayList<ArrayList<Letter>> line : out) {
-			for (ArrayList<Letter> word : line) {
-				for (Letter letter : word) {
-					g.drawRect(letter.x, letter.y,
+		for (Column c : result.columns) {
+			for (Line l : c.lines) {
+				for (Word w : l.words) {
+					for (Letter letter : w.letters) {
+						g.drawRect(letter.x, letter.y,
 							letter.width, letter.height);
+					}
 				}
 			}
 		}
 
 		// Lines
 		g.setColor(new Color(0, 127, 0, 191));
-		for (ArrayList<ArrayList<Letter>> line : out) {
-			Letter prevLetter = null;
-			for (ArrayList<Letter> word : line) {
-				for (Letter letter : word) {
-					if (prevLetter != null) {
-						g.drawLine(
-							prevLetter.x + prevLetter.width / 2,
-							prevLetter.y + prevLetter.height / 2,
-							letter.x + letter.width / 2,
-							letter.y + letter.height / 2
-						);
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				Letter prevLetter = null;
+				for (Word word : line.words) {
+					for (Letter letter : word.letters) {
+						if (prevLetter != null) {
+							g.drawLine(
+								prevLetter.x + prevLetter.width / 2,
+								prevLetter.y + prevLetter.height / 2,
+								letter.x + letter.width / 2,
+								letter.y + letter.height / 2
+							);
+						}
+						prevLetter = letter;
 					}
-					prevLetter = letter;
 				}
 			}
 		}
 		
 		// Words
 		g.setColor(new Color(0, 0, 255, 191));
-		for (ArrayList<ArrayList<Letter>> line : out) {
-			for (ArrayList<Letter> word : line) {
-				Rectangle wr = null;
-				for (Letter letter : word) {
-					if (wr == null) {
-						wr = new Rectangle(letter);
-					} else {
-						wr.add(letter);
-					}
+		for (Column c : result.columns) {
+			for (Line line : c.lines) {
+				for (Word word : line.words) {
+					Rectangle wr = word.boundingRect;
+					g.drawRect(wr.x - (int) thickness * 2, wr.y - (int) thickness * 2, wr.width + (int) thickness * 4, wr.height + (int) thickness * 4);
 				}
-				if (wr == null) { continue; }
-				g.drawRect(wr.x - (int) thickness * 2, wr.y - (int) thickness * 2, wr.width + (int) thickness * 4, wr.height + (int) thickness * 4);
 			}
 		}
 
