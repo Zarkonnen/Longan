@@ -16,7 +16,7 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.better.BetterChunker;
+import com.metalbeetle.longan.better.BetterChunker2;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -51,7 +51,7 @@ public class Main {
 		}
 		if (args[0].equals("categorize")) {
 			LetterTestDataCategoriser ltdc = new LetterTestDataCategoriser(new BetterLetterFinder(),
-					new BetterChunker());
+					new BetterChunker2());
 			ltdc.run(new File(args[1]), new File(args[2]));
 		}
 	}

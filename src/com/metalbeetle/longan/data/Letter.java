@@ -1,4 +1,4 @@
-package com.metalbeetle.longan;
+package com.metalbeetle.longan.data;
 
 /*
  * Copyright 2011 David Stark
@@ -18,19 +18,22 @@ package com.metalbeetle.longan;
 
 import java.awt.Rectangle;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-public class LetterRect extends Rectangle {
+public class Letter extends Rectangle {
+	public final HashMap<String, java.lang.Double> possibleLetters = new HashMap<String, java.lang.Double>();
 	public double relativeLineOffset = 0.0;
 	public double relativeSize = 1.0;
 	public boolean[][] mask;
 	public boolean fragment;
-	public ArrayList<LetterRect> components = new ArrayList<LetterRect>();
+	public ArrayList<Letter> components = new ArrayList<Letter>();
 
-	public LetterRect(int x, int y, int width, int height) {
+	public Letter(int x, int y, int width, int height) {
 		super(x, y, width, height);
 	}
 	
-	public LetterRect add(LetterRect lr2) {
+	public Letter add(Letter lr2) {
 		Rectangle newR = new Rectangle(this);
 		newR.add(lr2);
 		boolean[][] newMask = new boolean[newR.height][newR.width];
@@ -53,7 +56,7 @@ public class LetterRect extends Rectangle {
 			}
 		}
 		
-		LetterRect newLR = new LetterRect(newR.x, newR.y, newR.width, newR.height);
+		Letter newLR = new Letter(newR.x, newR.y, newR.width, newR.height);
 		newLR.mask = newMask;
 		if (components.isEmpty()) {
 			newLR.components.add(this);
@@ -70,14 +73,14 @@ public class LetterRect extends Rectangle {
 		return newLR;
 	}
 
-	public ArrayList<LetterRect> splitAlongXAxis(int xSplit, int splitW) {
-		ArrayList<LetterRect> lrs = new ArrayList<LetterRect>();
+	public ArrayList<Letter> splitAlongXAxis(int xSplit, int splitW) {
+		ArrayList<Letter> lrs = new ArrayList<Letter>();
 		// Left side
 		boolean[][] newMask = new boolean[height][xSplit];
 		for (int my = 0; my < height; my++) {
 			System.arraycopy(mask[my], 0, newMask[my], 0, xSplit);
 		}
-		LetterRect left = new LetterRect(x, y, xSplit, height);
+		Letter left = new Letter(x, y, xSplit, height);
 		left.mask = newMask;
 		left.relativeLineOffset = relativeLineOffset;
 		left.relativeSize = Math.sqrt(relativeSize * xSplit / width);
@@ -89,7 +92,7 @@ public class LetterRect extends Rectangle {
 		for (int my = 0; my < height; my++) {
 			System.arraycopy(mask[my], xSplit + splitW, newMask[my], 0, width - xSplit - splitW);
 		}
-		LetterRect right = new LetterRect(x + xSplit + splitW, y, width - xSplit - splitW, height);
+		Letter right = new Letter(x + xSplit + splitW, y, width - xSplit - splitW, height);
 		right.mask = newMask;
 		right.relativeLineOffset = relativeLineOffset;
 		right.relativeSize = Math.sqrt(relativeSize * (width - xSplit - splitW) / width);
@@ -127,5 +130,27 @@ public class LetterRect extends Rectangle {
 			relativeLineOffset = 0; // qqDPS
 			relativeSize = Math.sqrt(width * height);
 		}
+	}
+	
+	public String bestLetter() {
+		String bestL = "";
+		double bestP = 0.0;
+		for (Map.Entry<String, java.lang.Double> entry : possibleLetters.entrySet()) {
+			if (entry.getValue() > bestP) {
+				bestL = entry.getKey();
+				bestP = entry.getValue();
+			}
+		}
+		return bestL;
+	}
+
+	public double bestScore() {
+		double bestP = 0.0;
+		for (Map.Entry<String, java.lang.Double> entry : possibleLetters.entrySet()) {
+			if (entry.getValue() > bestP) {
+				bestP = entry.getValue();
+			}
+		}
+		return bestP;
 	}
 }

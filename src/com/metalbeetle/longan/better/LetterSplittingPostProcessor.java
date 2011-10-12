@@ -16,8 +16,7 @@ package com.metalbeetle.longan.better;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.image.BufferedImage;
@@ -44,10 +43,10 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 				lp: for (int i = 0; i < word.size(); i++) {
 					Letter l = word.get(i);
 					double bestScore = l.bestScore();
-					if (bestScore < LOW_SCORE_BOUNDARY && l.location.components.size() > 1) {
-						Collections.sort(l.location.components, new XComparator());
+					if (bestScore < LOW_SCORE_BOUNDARY && l.components.size() > 1) {
+						Collections.sort(l.components, new XComparator());
 						ArrayList<Letter> ls = new ArrayList<Letter>();
-						for (LetterRect lr : l.location.components) {
+						for (Letter lr : l.components) {
 							// Ignore fragments, they're probably what messed this up.
 							if (lr.fragment) { continue; }
 							Letter newL = longan.letterIdentifier.identify(lr, img, metadata);

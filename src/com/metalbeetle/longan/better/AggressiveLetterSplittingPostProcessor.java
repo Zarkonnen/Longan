@@ -16,8 +16,7 @@ package com.metalbeetle.longan.better;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.Color;
@@ -50,9 +49,9 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 					double bestScore = l.bestScore();
 					ArrayList<Letter> ls = new ArrayList<Letter>();
 					if (bestScore < LOW_SCORE_BOUNDARY) {
-						ArrayList<LetterRect> lrs = sawApart(l.location, img);
+						ArrayList<Letter> lrs = sawApart(l, img);
 						if (lrs == null) { continue lp; }
-						for (LetterRect lr : lrs) {
+						for (Letter lr : lrs) {
 							if (lr.width == 0 || lr.height == 0) {
 								continue;
 							}
@@ -73,14 +72,14 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 		}
 	}
 	
-	static ArrayList<LetterRect> sawApart(LetterRect lr, BufferedImage img) {
+	static ArrayList<Letter> sawApart(Letter l, BufferedImage img) {
 		int bestSawPosition = -1;
 		int lowestResistance = Integer.MAX_VALUE;
-		for (int saw = lr.width / 4; saw < lr.width * 3 / 4 - 1; saw++) {
+		for (int saw = l.width / 4; saw < l.width * 3 / 4 - 1; saw++) {
 			int resistance = 0;
-			for (int blade = 0; blade < lr.height; blade++) {
-				if (lr.mask[blade][saw]) {
-					Color c = new Color(img.getRGB(lr.x + saw, lr.y + blade));
+			for (int blade = 0; blade < l.height; blade++) {
+				if (l.mask[blade][saw]) {
+					Color c = new Color(img.getRGB(l.x + saw, l.y + blade));
 					resistance += (255 * 3 - c.getRed() - c.getGreen() - c.getBlue());
 				}
 			}
@@ -94,9 +93,9 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 			int sawLeftWiden = 0;
 			for (int saw = bestSawPosition - 1; saw > 0; saw--) {
 				int resistance = 0;
-				for (int blade = 0; blade < lr.height; blade++) {
-					if (lr.mask[blade][saw]) {
-						Color c = new Color(img.getRGB(lr.x + saw, lr.y + blade));
+				for (int blade = 0; blade < l.height; blade++) {
+					if (l.mask[blade][saw]) {
+						Color c = new Color(img.getRGB(l.x + saw, l.y + blade));
 						resistance += (255 * 3 - c.getRed() - c.getGreen() - c.getBlue());
 					}
 				}
@@ -107,11 +106,11 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 				}
 			}
 			int sawRightWiden = 0;
-			for (int saw = bestSawPosition; saw < lr.width - 2; saw++) {
+			for (int saw = bestSawPosition; saw < l.width - 2; saw++) {
 				int resistance = 0;
-				for (int blade = 0; blade < lr.height; blade++) {
-					if (lr.mask[blade][saw]) {
-						Color c = new Color(img.getRGB(lr.x + saw, lr.y + blade));
+				for (int blade = 0; blade < l.height; blade++) {
+					if (l.mask[blade][saw]) {
+						Color c = new Color(img.getRGB(l.x + saw, l.y + blade));
 						resistance += (255 * 3 - c.getRed() - c.getGreen() - c.getBlue());
 					}
 				}
@@ -122,7 +121,7 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 				}
 			}
 			bestSawPosition -= sawLeftWiden;
-			return lr.splitAlongXAxis(bestSawPosition, sawLeftWiden + sawRightWiden);
+			return l.splitAlongXAxis(bestSawPosition, sawLeftWiden + sawRightWiden);
 		} else {
 			return null;
 		}

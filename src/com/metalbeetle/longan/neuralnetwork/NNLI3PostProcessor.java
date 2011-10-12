@@ -16,7 +16,7 @@ package com.metalbeetle.longan.neuralnetwork;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.image.BufferedImage;
@@ -56,7 +56,7 @@ public class NNLI3PostProcessor implements PostProcessor {
 					boolean last = i == word.size() - 1;
 					
 					// l/I/f -> i
-					if (l.bestLetter().matches("[lIf]") && l.location.components.size() >= 2) {
+					if (l.bestLetter().matches("[lIf]") && l.components.size() >= 2) {
 						l.possibleLetters.put("i", l.bestScore() + NUDGE);
 					}
 					
@@ -76,7 +76,7 @@ public class NNLI3PostProcessor implements PostProcessor {
 					//for (String s : NNLetterIdentifier3.CASE_MERGED) {
 					if (NNLetterIdentifier3.CASE_MERGED.contains(l.bestLetter().toLowerCase())) {
 						String s = l.bestLetter().toLowerCase();
-						if (l.location.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
+						if (l.relativeSize > LOWER_TO_UPPER_SIZE_BOUNDARY.get(s)) {
 							l.possibleLetters.put(s.toUpperCase(), l.possibleLetters.get(s.toUpperCase()) + NUDGE);
 						} else {
 							l.possibleLetters.put(s, l.possibleLetters.get(s) + NUDGE);
@@ -85,7 +85,7 @@ public class NNLI3PostProcessor implements PostProcessor {
 					
 					// Comma/single quote identification
 					if (l.bestLetter().matches("[,']")) {
-						l.possibleLetters.put(l.location.relativeLineOffset > 0 ? "," : "'",
+						l.possibleLetters.put(l.relativeLineOffset > 0 ? "," : "'",
 								l.bestScore() + NUDGE);
 					}
 				}

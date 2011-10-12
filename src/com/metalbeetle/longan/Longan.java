@@ -16,8 +16,8 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.better.AggressiveLetterSplittingPostProcessor;
-import com.metalbeetle.longan.better.BetterChunker;
 import com.metalbeetle.longan.better.BetterChunker2;
 import com.metalbeetle.longan.better.BetterLetterFinder;
 import com.metalbeetle.longan.better.HeuristicPostProcessor;
@@ -96,16 +96,16 @@ public class Longan {
 		for (PreProcessor pp : preProcessors) {
 			img = pp.process(img, md);
 		}
-		ArrayList<LetterRect> letterRects = letterFinder.find(img, md);
-		ArrayList<ArrayList<ArrayList<LetterRect>>> rectLines = chunker.chunk(letterRects, img, md);
+		ArrayList<Letter> Letters = letterFinder.find(img, md);
+		ArrayList<ArrayList<ArrayList<Letter>>> rectLines = chunker.chunk(Letters, img, md);
 		ArrayList<ArrayList<ArrayList<Letter>>> lines = new ArrayList<ArrayList<ArrayList<Letter>>>();
-		for (ArrayList<ArrayList<LetterRect>> rectLine : rectLines) {
+		for (ArrayList<ArrayList<Letter>> rectLine : rectLines) {
 			ArrayList<ArrayList<Letter>> line = new ArrayList<ArrayList<Letter>>();
 			lines.add(line);
-			for (ArrayList<LetterRect> rectWord : rectLine) {
+			for (ArrayList<Letter> rectWord : rectLine) {
 				ArrayList<Letter> word = new ArrayList<Letter>();
 				line.add(word);
-				for (LetterRect r : rectWord) {
+				for (Letter r : rectWord) {
 					word.add(letterIdentifier.identify(r, img, md));
 				}
 			}

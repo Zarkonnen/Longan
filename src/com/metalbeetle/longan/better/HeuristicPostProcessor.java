@@ -16,7 +16,7 @@ package com.metalbeetle.longan.better;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
 import com.metalbeetle.longan.stage.PostProcessor;
 import java.awt.image.BufferedImage;

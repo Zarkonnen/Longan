@@ -16,12 +16,13 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Letter;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 public class Util {
-	static BufferedImage cropMaskAndAdjust(BufferedImage src, LetterRect r, int intensityAdjustment) {
+	static BufferedImage cropMaskAndAdjust(BufferedImage src, Letter r, int intensityAdjustment) {
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
 		Graphics g = maskedSrc.getGraphics();
 		g.drawImage(

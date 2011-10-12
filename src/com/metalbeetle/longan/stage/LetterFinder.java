@@ -16,11 +16,11 @@ package com.metalbeetle.longan.stage;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public interface LetterFinder {
-	public ArrayList<LetterRect> find(BufferedImage img, HashMap<String, String> metadata);
+	public ArrayList<Letter> find(BufferedImage img, HashMap<String, String> metadata);
 }

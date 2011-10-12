@@ -16,6 +16,7 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Letter;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -36,8 +37,8 @@ public class Visualizer {
 		for (ArrayList<ArrayList<Letter>> line : out) {
 			for (ArrayList<Letter> word : line) {
 				for (Letter letter : word) {
-					g.drawRect(letter.location.x, letter.location.y,
-							letter.location.width, letter.location.height);
+					g.drawRect(letter.x, letter.y,
+							letter.width, letter.height);
 				}
 			}
 		}
@@ -50,10 +51,10 @@ public class Visualizer {
 				for (Letter letter : word) {
 					if (prevLetter != null) {
 						g.drawLine(
-							prevLetter.location.x + prevLetter.location.width / 2,
-							prevLetter.location.y + prevLetter.location.height / 2,
-							letter.location.x + letter.location.width / 2,
-							letter.location.y + letter.location.height / 2
+							prevLetter.x + prevLetter.width / 2,
+							prevLetter.y + prevLetter.height / 2,
+							letter.x + letter.width / 2,
+							letter.y + letter.height / 2
 						);
 					}
 					prevLetter = letter;
@@ -68,9 +69,9 @@ public class Visualizer {
 				Rectangle wr = null;
 				for (Letter letter : word) {
 					if (wr == null) {
-						wr = new Rectangle(letter.location);
+						wr = new Rectangle(letter);
 					} else {
-						wr.add(letter.location);
+						wr.add(letter);
 					}
 				}
 				if (wr == null) { continue; }

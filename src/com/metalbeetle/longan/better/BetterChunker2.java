@@ -16,31 +16,25 @@ package com.metalbeetle.longan.better;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Line;
 import com.metalbeetle.longan.Histogram;
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.stage.Chunker;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Random;
-import javax.imageio.ImageIO;
 
 public class BetterChunker2 implements Chunker {
-	static final int MAX_SIZE_OUTLIER = 10; // qqDPS
+	static final int MAX_SIZE_OUTLIER = 10;
 	static final double MAX_PIECE_H_DEVIATION = 1.0;
 	static final double MAX_PIECE_W_DEVIATION = 1.5;
 	static final double MAX_WHOLE_X_DIST = 1.6;
 	static final double MAX_WHOLE_Y_DIST = 0.1;
 
-	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(
-			ArrayList<LetterRect> rects,
+	public ArrayList<ArrayList<ArrayList<Letter>>> chunk(
+			ArrayList<Letter> rects,
 			BufferedImage img,
 			HashMap<String, String> metadata)
 	{
@@ -54,9 +48,9 @@ public class BetterChunker2 implements Chunker {
 			sizeSum += sz;
 		}
 		int avgSize = (int) (sizeSum / (rects.size() / 2));
-		ArrayList<LetterRect> wholes = new ArrayList<LetterRect>();
-		ArrayList<LetterRect> pieces = new ArrayList<LetterRect>();
-		for (LetterRect r : rects) {
+		ArrayList<Letter> wholes = new ArrayList<Letter>();
+		ArrayList<Letter> pieces = new ArrayList<Letter>();
+		for (Letter r : rects) {
 			double size = Math.sqrt(r.width * r.height);
 			if (size <= avgSize * MAX_SIZE_OUTLIER && r.width <= avgSize * MAX_SIZE_OUTLIER && r.height <= avgSize * MAX_SIZE_OUTLIER) {
 				if (size < avgSize * 0.5) {
@@ -73,7 +67,7 @@ public class BetterChunker2 implements Chunker {
 		}
 		// Arrange the wholes into lines.
 		ArrayList<Line> lines = new ArrayList<Line>();
-		lp: for (LetterRect lr : wholes) {
+		lp: for (Letter lr : wholes) {
 			for (Line l : lines) {
 				if (l.xDist(lr) < MAX_WHOLE_X_DIST * Math.max(avgSize, l.avgWidth()) &&
 					l.yDist(lr) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l.avgHeight()))
@@ -95,7 +89,7 @@ public class BetterChunker2 implements Chunker {
 					if (l1.xDist(l2.boundingRect) < MAX_WHOLE_X_DIST * Math.max(avgSize, l1.avgWidth()) &&
 						l1.yDist(l2.boundingRect) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l1.avgHeight()))
 					{
-						for (LetterRect lr : l2.rs) {
+						for (Letter lr : l2.rs) {
 							l1.add(lr);
 						}
 						lines.remove(l2);
@@ -130,8 +124,8 @@ public class BetterChunker2 implements Chunker {
 		/*ArrayList<Column> cols = new ArrayList<Column>();
 		for (Line l : lines) {
 			for (int i = 0; i < l.rs.size() - 1; i++) {
-				LetterRect r0 = l.rs.get(i);
-				LetterRect r1 = l.rs.get(i + 1);
+				Letter r0 = l.rs.get(i);
+				Letter r1 = l.rs.get(i + 1);
 				int dist = r1.x - (r0.x + r0.width);
 				if (dist > letterToWordSpacingBoundary * 3) {
 					// Snap the line in two.
@@ -158,7 +152,7 @@ public class BetterChunker2 implements Chunker {
 			g.setColor(new Color(r.nextInt(200), r.nextInt(200), r.nextInt(200), 160));
 			for (Line l : c.lines) {
 				Rectangle b = null;
-				for (LetterRect lr : l.rs) {
+				for (Letter lr : l.rs) {
 					if (b == null) {
 						b = new Rectangle(lr);
 					} else {
@@ -175,14 +169,14 @@ public class BetterChunker2 implements Chunker {
 		}*/
 		
 		// Add the pieces into the lines.
-		for (LetterRect piece : pieces) {
+		for (Letter piece : pieces) {
 			double bestVDist = 100000;
 			Line bestL = null;
 			for (Line l : lines) {
 				double vDist = Math.abs(piece.getCenterY() - l.boundingRect.getCenterY());
 				
 				Rectangle b = null;
-				for (LetterRect lr : l.rs) {
+				for (Letter lr : l.rs) {
 					if (b == null) {
 						b = new Rectangle(lr);
 					} else {
@@ -214,8 +208,8 @@ public class BetterChunker2 implements Chunker {
 		for (Line l : lines) {
 			// Go over letter pairs and coalesce if needed.
 			for (int i = 0; i < l.rs.size() - 1; i++) {
-				LetterRect r0 = l.rs.get(i);
-				LetterRect r1 = l.rs.get(i + 1);
+				Letter r0 = l.rs.get(i);
+				Letter r1 = l.rs.get(i + 1);
 				if (r0.x + r0.width < r1.x + r1.width) {
 					// r0 ends before r1 does, so the two may overlap, but not completely
 					int overlapPx = r0.x + r0.width - r1.x;
@@ -227,7 +221,7 @@ public class BetterChunker2 implements Chunker {
 					// r0 ends after r1, so r1 is entirely within r0
 				}
 				// They overlap enough: coalesce.
-				LetterRect newR = r0.add(r1);
+				Letter newR = r0.add(r1);
 				l.rs.add(i, newR);
 				l.rs.remove(i + 1);
 				l.rs.remove(i + 1);
@@ -237,24 +231,24 @@ public class BetterChunker2 implements Chunker {
 		
 		// Next, fill in the relativeLineOffset / relativeSize values.
 		for (Line l : lines) {
-			for (LetterRect lr : l.rs) {
+			for (Letter lr : l.rs) {
 				lr.relativeLineOffset = (lr.getCenterY() - l.boundingRect.getCenterY()) / avgSize;
 				lr.relativeSize = Math.sqrt(lr.width * lr.height) / avgSize;
 			}
 		}
 		
-		ArrayList<ArrayList<ArrayList<LetterRect>>> result = new ArrayList<ArrayList<ArrayList<LetterRect>>>();
+		ArrayList<ArrayList<ArrayList<Letter>>> result = new ArrayList<ArrayList<ArrayList<Letter>>>();
 		for (Line l : lines) {
-			ArrayList<ArrayList<LetterRect>> rLine = new ArrayList<ArrayList<LetterRect>>();
-			ArrayList<LetterRect> word = new ArrayList<LetterRect>();
+			ArrayList<ArrayList<Letter>> rLine = new ArrayList<ArrayList<Letter>>();
+			ArrayList<Letter> word = new ArrayList<Letter>();
 			word.add(l.rs.get(0));
 			for (int i = 0; i < l.rs.size() - 1; i++) {
-				LetterRect r0 = l.rs.get(i);
-				LetterRect r1 = l.rs.get(i + 1);
+				Letter r0 = l.rs.get(i);
+				Letter r1 = l.rs.get(i + 1);
 				int dist = r1.x - (r0.x + r0.width);
 				if (dist > letterToWordSpacingBoundary) {
 					rLine.add(word);
-					word = new ArrayList<LetterRect>();
+					word = new ArrayList<Letter>();
 				}
 				word.add(r1);
 			}
@@ -307,7 +301,7 @@ public class BetterChunker2 implements Chunker {
 		Rectangle boundingBox() {
 			Rectangle bb = null;
 			for (Line l : lines) {
-				for (LetterRect r : l.rs) {
+				for (Letter r : l.rs) {
 					if (bb == null) {
 						bb = new Rectangle(r);
 					} else {
@@ -316,67 +310,6 @@ public class BetterChunker2 implements Chunker {
 				}
 			}
 			return bb;
-		}
-	}
-	
-	class Line {
-		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
-		Rectangle boundingRect = null;
-		
-		void add(LetterRect r) {
-			rs.add(r);
-			if (boundingRect == null) {
-				boundingRect = new Rectangle(r);
-			} else {
-				boundingRect.add(r);
-			}
-		}
-		
-		void regenBoundingRect() {
-			boundingRect = null;
-			for (LetterRect lr : rs) {
-				if (boundingRect == null) {
-					boundingRect = new Rectangle(lr);
-				} else {
-					boundingRect.add(lr);
-				}
-			}
-		}
-		
-		int xDist(Rectangle r2) {
-			if (boundingRect.x + boundingRect.width < r2.x) {
-				return r2.x - boundingRect.x - boundingRect.width;
-			}
-			if (r2.x + r2.width < boundingRect.x) {
-				return boundingRect.x - r2.x - r2.width;
-			}
-			return 0;
-		}
-		
-		int yDist(Rectangle r2) {
-			if (boundingRect.y + boundingRect.height < r2.y) {
-				return r2.y - boundingRect.y - boundingRect.height;
-			}
-			if (r2.y + r2.height < boundingRect.y) {
-				return boundingRect.y - r2.y - r2.height;
-			}
-			return 0;
-		}
-		
-		double avgHeight() {
-			double h = 0;
-			for (Rectangle r2 : rs) {
-				h += r2.height;
-			}
-			return h / rs.size();
-		}
-		
-		double avgWidth() {
-			double w = 0;
-			for (Rectangle r2 : rs) {
-				w += r2.width;
-			}
-			return w / rs.size();
 		}
 	}
 }

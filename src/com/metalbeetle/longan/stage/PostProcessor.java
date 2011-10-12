@@ -16,7 +16,7 @@ package com.metalbeetle.longan.stage;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.Longan;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;

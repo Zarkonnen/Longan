@@ -16,11 +16,11 @@ package com.metalbeetle.longan.stage;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public interface Chunker {
-	public ArrayList<ArrayList<ArrayList<LetterRect>>> chunk(ArrayList<LetterRect> rects, BufferedImage img, HashMap<String, String> metadata);
+	public ArrayList<ArrayList<ArrayList<Letter>>> chunk(ArrayList<Letter> rects, BufferedImage img, HashMap<String, String> metadata);
 }

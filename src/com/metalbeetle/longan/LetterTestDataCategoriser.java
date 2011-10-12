@@ -16,6 +16,7 @@ package com.metalbeetle.longan;
  * limitations under the License.
  */
 
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.fruitbat.atrio.ATRWriter;
 import com.metalbeetle.longan.stage.Chunker;
 import com.metalbeetle.longan.stage.LetterFinder;
@@ -103,12 +104,12 @@ public class LetterTestDataCategoriser implements KeyListener {
 			return;
 		}
 		HashMap<String, String> md = new HashMap<String, String>();
-		ArrayList<LetterRect> rects = lf.find(img, md);
-		ArrayList<ArrayList<ArrayList<LetterRect>>> rs = chunker.chunk(rects, img, md);
-		rects.clear();
-		for (ArrayList<ArrayList<LetterRect>> line : rs) {
-			for (ArrayList<LetterRect> word : line) {
-				rects.addAll(word);
+		ArrayList<Letter> letters = lf.find(img, md);
+		ArrayList<ArrayList<ArrayList<Letter>>> rs = chunker.chunk(letters, img, md);
+		letters.clear();
+		for (ArrayList<ArrayList<Letter>> line : rs) {
+			for (ArrayList<Letter> word : line) {
+				letters.addAll(word);
 			}
 		}
 		
@@ -118,7 +119,7 @@ public class LetterTestDataCategoriser implements KeyListener {
 			blackWhiteBoundary = (REFERENCE_INTENSITY_BOUNDARY - intensityBoundary) * 3 / 4;
 		}
 		
-		for (LetterRect r : rects) {
+		for (Letter r : letters) {
 			letter = null;
 			letterR = r;
 			letterImg = Util.cropMaskAndAdjust(img, r, blackWhiteBoundary);

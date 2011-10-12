@@ -16,7 +16,7 @@ package com.metalbeetle.longan.better;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.stage.LetterFinder;
 import java.awt.Color;
 import java.awt.Point;
@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class BetterLetterFinder implements LetterFinder {	
-	public ArrayList<LetterRect> find(BufferedImage img, HashMap<String, String> metadata) {
+	public ArrayList<Letter> find(BufferedImage img, HashMap<String, String> metadata) {
 		if (!metadata.containsKey("blackWhiteBoundary")) {
 			new IntensityHistogramPreProcessor().process(img, metadata);
 		}
@@ -41,12 +41,12 @@ public class BetterLetterFinder implements LetterFinder {
 			}
 		}
 
-		ArrayList<LetterRect> rs = new ArrayList<LetterRect>();
+		ArrayList<Letter> rs = new ArrayList<Letter>();
 		int floodID = 2;
 		for (int searchY = 0; searchY < img.getHeight(); searchY++) {
 			for (int searchX = 0; searchX < img.getWidth(); searchX++) {
 				if (scan[searchY][searchX] == 1) {
-					LetterRect r = new LetterRect(searchX, searchY, 1, 1);
+					Letter r = new Letter(searchX, searchY, 1, 1);
 					LinkedList<Point> floodQueue = new LinkedList<Point>();
 					Point p = new Point(searchX, searchY);
 					floodQueue.add(p);
@@ -59,7 +59,7 @@ public class BetterLetterFinder implements LetterFinder {
 		return rs;
 	}
 
-	private void floodFill(int[][] scan, LinkedList<Point> floodQueue, LetterRect r, int floodID) {
+	private void floodFill(int[][] scan, LinkedList<Point> floodQueue, Letter r, int floodID) {
 		while (floodQueue.size() > 0) {
 			Point p = floodQueue.poll();
 			int y = p.y;

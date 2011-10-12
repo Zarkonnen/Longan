@@ -16,7 +16,7 @@ package com.metalbeetle.longan.simple;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.stage.PlaintextConverter;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;

@@ -16,8 +16,7 @@ package com.metalbeetle.longan.neuralnetwork;
  * limitations under the License.
  */
 
-import com.metalbeetle.longan.Letter;
-import com.metalbeetle.longan.LetterRect;
+import com.metalbeetle.longan.data.Letter;
 import com.metalbeetle.longan.stage.LetterIdentifier;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -106,13 +105,13 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		}
 	}
 
-	public Letter identify(LetterRect r, BufferedImage img, HashMap<String, String> metadata) {
+	public Letter identify(Letter letter, BufferedImage img, HashMap<String, String> metadata) {
 		int intensityAdjustment = 0;
 		if (metadata.containsKey("blackWhiteBoundary")) {
 			int blackWhiteBoundary = Integer.parseInt(metadata.get("blackWhiteBoundary"));
 			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
 		}
-		double[] data = prepare(r, img, intensityAdjustment);
+		double[] data = prepare(letter, img, intensityAdjustment);
 		HashMap<String, Double> scores = new HashMap<String, Double>();
 		double[] result = net.run(data);
 		for (int l = 0; l < LETTERS.length; l++) {
@@ -124,9 +123,9 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 			double score = (OUTPUT_SIZE - error) / OUTPUT_SIZE;
 			scores.put(LETTERS[l], score);
 		}
-		Letter l = new Letter(r, scores);
+		letter.possibleLetters.putAll(scores);
 		//System.out.print(l.bestLetter());
-		String bl = l.bestLetter();
+		String bl = letter.bestLetter();
 		if (deciders.containsKey(bl)) {
 			//System.out.print(" <");
 			double bestScore = 0.0;
@@ -139,7 +138,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 				}
 			}
 			if (bestScore > 0.5) {
-				l.possibleLetters.put(bestAltLetter, 1.0); // qqDPS
+				letter.possibleLetters.put(bestAltLetter, 1.0); // qqDPS
 			}
 			try {
 				//ImageIO.write(masked(r, img, intensityAdjustment), "png", new File("/Users/zar/Desktop/lets/" +
@@ -149,14 +148,14 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 			}
 		}
 		//System.out.println();
-		return l;
+		return letter;
 	}
 	
 	int zzz = 0;
 	
 	static int q = 1000;
 	
-	BufferedImage masked(LetterRect r, BufferedImage src, int intensityAdjustment) {
+	BufferedImage masked(Letter r, BufferedImage src, int intensityAdjustment) {
 		// Masking
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
 		Graphics g = maskedSrc.getGraphics();
@@ -186,7 +185,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 		return maskedSrc;
 	}
 	
-	static double[] prepare(LetterRect r, BufferedImage src, int intensityAdjustment) {
+	static double[] prepare(Letter r, BufferedImage src, int intensityAdjustment) {
 		// Masking
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
 		Graphics g = maskedSrc.getGraphics();
