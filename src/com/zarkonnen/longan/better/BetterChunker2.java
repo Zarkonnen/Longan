@@ -133,6 +133,8 @@ public class BetterChunker2 implements Chunker {
 		
 		int letterToWordSpacingBoundary = hg.firstValleyEnd();
 		
+		metadata.put("letterToWordSpacingBoundary", "" + letterToWordSpacingBoundary); 
+		
 		// Now arrange lines into columns.
 		Result result = new Result();
 		result.img = img;

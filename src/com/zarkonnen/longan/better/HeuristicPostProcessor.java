@@ -38,7 +38,7 @@ public class HeuristicPostProcessor implements PostProcessor {
 	};
 	
 	static final String[] NOT_INSIDE_WORDS = {
-		"!", "£", "$", "%", "(", ")", ",", ":", ";", "/", "?", "-",
+		"!", "£", "%", ",", ":", ";", "?", "/"
 	};
 	
 	public void process(Result result, Longan longan) {
@@ -82,11 +82,16 @@ public class HeuristicPostProcessor implements PostProcessor {
 							}
 						}
 
-						// Most symbols can't be inside words.
+						// Some symbols can't be inside words.
 						if (!first && !last) {
 							for (String n : NOT_INSIDE_WORDS) {
 								l.possibleLetters.put(n, NO);
 							}
+						}
+						
+						// $ will clearly be a S if inside a word
+						if (!first && !last && l.bestLetter().equals("$")) {
+							l.possibleLetters.put(allCaps ? "S" : "s", l.bestScore() + NUDGE);
 						}
 						
 						// Dashes and dots.

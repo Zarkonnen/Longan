@@ -40,8 +40,10 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 				for (Word word : line.words) {
 					lp: for (int i = 0; i < word.letters.size(); i++) {
 						Letter l = word.letters.get(i);
+						//System.out.print(l.bestLetter());
 						double bestScore = l.bestScore();
 						if (bestScore < LOW_SCORE_BOUNDARY && l.components.size() > 1) {
+							//System.out.print("?");
 							Collections.sort(l.components, new LetterXComparator());
 							ArrayList<Letter> ls = new ArrayList<Letter>();
 							for (Letter lr : l.components) {
