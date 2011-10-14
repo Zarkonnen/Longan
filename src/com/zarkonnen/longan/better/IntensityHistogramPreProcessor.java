@@ -50,7 +50,7 @@ public class IntensityHistogramPreProcessor implements PreProcessor {
 	}
 	
 	public static int getBlackWhiteBoundary(Histogram hg) {
-		return hg.preLastValley(0.1);
+		return hg.blackWhiteBoundary();
 	}
 	
 	public static int getStandardWhite(Histogram hg) {
@@ -61,10 +61,10 @@ public class IntensityHistogramPreProcessor implements PreProcessor {
 		Histogram hg = generate(img);
 		/*try {
 			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/hg.png"));
-			System.exit(0);
 		} catch (Exception e) {
 			e.printStackTrace();
-		}*/
+		}
+		//System.exit(0);*/
 		int bwb = getBlackWhiteBoundary(hg);
 		if (!metadata.containsKey("blackWhiteBoundary")) {
 			metadata.put("blackWhiteBoundary", "" + bwb);

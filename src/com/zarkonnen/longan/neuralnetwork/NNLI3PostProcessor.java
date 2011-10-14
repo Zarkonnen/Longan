@@ -52,6 +52,13 @@ public class NNLI3PostProcessor implements PostProcessor {
 						Letter l = word.letters.get(i);
 						boolean first = i == 0;
 						boolean last = i == word.letters.size() - 1;
+						
+						if (l.bestLetter().equals("M") && l.height > l.width * 2) {
+							double bs = l.bestScore();
+							l.possibleLetters.put("I", bs + NUDGE);
+							l.possibleLetters.put("l", bs + NUDGE * 2);
+							l.possibleLetters.put("M", bs * 0.8);
+						}
 
 						// l/I/f -> i
 						if (l.bestLetter().matches("[lIf]") && l.components.size() >= 2) {

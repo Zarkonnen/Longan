@@ -49,13 +49,25 @@ public class Histogram {
 	}
 	
 	public void convolve(double[] kernel) {
-		int[] newHg = new int[hg.length + kernel.length];
-		//offset -= kernel.length - 1;
+		/*int[] newHg = new int[hg.length + kernel.length];
 		offset -= kernel.length / 2;
 		for (int i = 0; i < newHg.length; i++) {
 			double value = 0.0;
 			for (int j = 0; j < kernel.length; j++) {
 				value += kernel[j] * (i + j < hg.length ? hg[i + j] : 0);
+			}
+			newHg[i] = (int) value;
+		}
+		hg = newHg;
+		 * 
+		 */
+		int[] newHg = new int[hg.length + kernel.length * 2];
+		offset -= kernel.length;
+		for (int i = 0; i < newHg.length; i++) {
+			double value = 0.0;
+			for (int j = 0; j < kernel.length; j++) {
+				int p = i + j - kernel.length;
+				value += kernel[j] * (p < 0 || p >= hg.length ? 0 : hg[p]);
 			}
 			newHg[i] = (int) value;
 		}
@@ -66,8 +78,10 @@ public class Histogram {
 		long sum = 0;
 		long n = 0;
 		for (int i = index - offset; i < hg.length; i++) {
+			//n += hg[i];
+			//sum += i;
+			sum += i * hg[i];
 			n += hg[i];
-			sum += i;
 		}
 		if (n == 0) {
 			return index;
@@ -84,7 +98,13 @@ public class Histogram {
 		return p;
 	}
 	
-	public int preLastValley(double mult) {
+	public int blackWhiteBoundary() {
+		return firstValleyEnd(127);
+	}
+	
+	public int altBlackWhiteBoundary() {
+		int fwe = firstValleyEnd() - offset;
+		
 		// Find the last peak.
 		int bestValue = -1;
 		int lastPeak = hg.length - 1;
@@ -97,21 +117,29 @@ public class Histogram {
 			}
 		}
 				
-		// Find the end of the valley.
-		for (int i = lastPeak - 1; i >= 0; i--) {
-			if (hg[i] < bestValue * mult) {
-				return i + offset;
+		// Now go to the left until we reach somewhere that's at least mult smaller than that peak.
+		int blackWhitePoint = lastPeak - 1;
+		for (; blackWhitePoint >= fwe; blackWhitePoint--) {
+			if (hg[blackWhitePoint] < bestValue * 0.2) {
+				break;
 			}
 		}
 		
-		if (mult >= 0.9) {
-			return firstValleyEnd();
-		} else {
-			return preLastValley(mult + 0.1);
+		// Now finally slide down from there until we hit our first increase, or until we hit
+		// firstValleyEnd.
+		int cmpVal = hg[blackWhitePoint];
+		for (; blackWhitePoint >= fwe; blackWhitePoint--) {
+			if (hg[blackWhitePoint] > cmpVal) {
+				return blackWhitePoint + offset;
+			} else {
+				cmpVal = hg[blackWhitePoint];
+			}
 		}
+		
+		return fwe + offset;
 	}
 	
-	public int firstValleyEnd() {
+	public int firstPeak() {
 		// Find the first peak.
 		int bestValue = -1;
 		int firstPeak = 0;
@@ -123,11 +151,31 @@ public class Histogram {
 				bestValue = hg[i];
 			}
 		}
-				
+		return firstPeak;
+	}
+	
+	public int firstValleyEnd() {
+		return firstValleyEnd(offset);
+	}
+	
+	public int firstValleyEnd(int atLeast) {
+		atLeast -= offset;
+		// Find the first peak.
+		int bestValue = -1;
+		int firstPeak = 0;
+		for (int i = 0; i < hg.length; i++) {
+			if (hg[i] < bestValue) {
+				break;
+			} else {
+				firstPeak = i;
+				bestValue = hg[i];
+			}
+		}
+						
 		// Find the end of the valley.
 		int valleyEnd = firstPeak;
 		for (int i = firstPeak + 1; i < hg.length; i++) {
-			if (hg[i] > bestValue) {
+			if (hg[i] > bestValue && i >= atLeast) {
 				return valleyEnd + offset;
 			}
 			valleyEnd = i;
@@ -171,13 +219,33 @@ public class Histogram {
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, hg.length, max / squash);
 		g.setColor(Color.BLACK);
-		int fwe = preLastValley(0.1);
+		int bwp = altBlackWhiteBoundary() - offset;
+		int fwe = firstValleyEnd() - offset;
+		int fwe127 = blackWhiteBoundary() - offset;
 		for (int i = 0; i < hg.length; i++) {
-			if (i == fwe) {
+			if (i == bwp) {
 				g.setColor(Color.RED);
-			} else {
-				g.setColor(Color.BLACK);
+				g.fillRect(i, 0, 1, max / squash);
+			} else if (i == fwe) {
+				g.setColor(Color.GREEN);
+				g.fillRect(i, 0, 1, max / squash);
+			} else if (i == fwe127) {
+				g.setColor(Color.BLUE);
+				g.fillRect(i, 0, 1, max / squash);
 			}
+			if (i == fwe && i == bwp) {
+				g.setColor(Color.ORANGE);
+				g.fillRect(i, 0, 1, max / squash);
+			}
+			if (i == fwe127 && i == fwe) {
+				g.setColor(Color.CYAN);
+				g.fillRect(i, 0, 1, max / squash);
+			}
+			if (i == fwe127 && i == bwp) {
+				g.setColor(Color.MAGENTA);
+				g.fillRect(i, 0, 1, max / squash);
+			}
+			g.setColor(Color.BLACK);
 			g.fillRect(i, (max - hg[i]) / squash, 1, hg[i] / squash);
 		}
 		return img;

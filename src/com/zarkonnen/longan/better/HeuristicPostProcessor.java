@@ -44,6 +44,8 @@ public class HeuristicPostProcessor implements PostProcessor {
 	public void process(Result result, Longan longan) {
 		for (Column c : result.columns) {
 			for (Line line : c.lines) {
+				double lAvgHeight = line.avgLetterHeight;
+				double lAvgWidth = line.avgLetterWidth;
 				for (Word word : line.words) {
 					// Check for all-capsiness and numberiness.
 					int caps = 0;
@@ -70,18 +72,6 @@ public class HeuristicPostProcessor implements PostProcessor {
 								}
 							}
 						}
-						// Numbers in words
-						/*if (l.bestLetter().matches("[0-9]") &&
-							(
-								(!first && !word.get(i - 1).bestLetter().matches("[0-9]")) ||
-								(!last && !word.get(i + 1).bestLetter().matches("[0-9]"))
-							)
-						)
-						{
-							for (String n : NUMBERS) {
-								l.possibleLetters.put(n, NO);
-							}
-						}*/
 
 						// Capitals not at the start of words
 						if (!allCaps) {
@@ -98,10 +88,34 @@ public class HeuristicPostProcessor implements PostProcessor {
 								l.possibleLetters.put(n, NO);
 							}
 						}
+						
+						// Dashes and dots.
+						if (l.width * l.height < lAvgWidth * lAvgHeight * 0.5 && l.bestScore() < 0.8) {
+							if (l.width > 2 * l.height) {
+								l.possibleLetters.put("-", l.bestScore() + 0.01);
+								continue;
+							}
+						}
+						
+						if ((l.bestLetter().equals("l") || l.bestLetter().equals("I"))
+							&& l.relativeLineOffset < -0.5 &&
+							l.width * l.height < lAvgWidth * lAvgHeight * 0.3)
+						{
+							l.possibleLetters.put("'", l.bestScore() + 0.01);
+							continue;
+						}
+						
+						if (l.bestLetter().equals("'") && l.relativeLineOffset > 0.1) {
+							l.possibleLetters.put(".", l.bestScore() + 0.01);
+						}
+						
+						if (allCaps && l.bestLetter().equals("l")) {
+							l.possibleLetters.put("I", l.bestScore() + 0.01);
+						}
 					}
 
 					// I/l at start of line / after !.? / alone, but not before i.
-					if (word.letters.size() > 0 && word.letters.get(0).bestLetter().equals("l")) {
+					if (!allCaps && word.letters.size() > 0 && word.letters.get(0).bestLetter().equals("l")) {
 						if (word.letters.size() == 1) {
 							word.letters.get(0).possibleLetters.put("I", word.letters.get(0).bestScore() + NUDGE);
 						} else {

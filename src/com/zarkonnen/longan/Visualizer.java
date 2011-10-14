@@ -80,14 +80,15 @@ public class Visualizer implements ResultConverter<BufferedImage> {
 			for (Line line : c.lines) {
 				for (Word word : line.words) {
 					Rectangle wr = word.boundingRect;
+					if (wr == null) { continue; }
 					g.drawRect(wr.x - (int) thickness * 2, wr.y - (int) thickness * 2, wr.width + (int) thickness * 4, wr.height + (int) thickness * 4);
 				}
 			}
 		}
 		
 		// Letters
-		g.setColor(new Color(255, 127, 0, 191));
-		g.setFont(new Font("Courier", Font.PLAIN, 12));
+		g.setColor(new Color(100, 0, 200, 191));
+		g.setFont(new Font("Verdana", Font.PLAIN, 16));
 		for (Column c : result.columns) {
 			for (Line l : c.lines) {
 				for (Word w : l.words) {

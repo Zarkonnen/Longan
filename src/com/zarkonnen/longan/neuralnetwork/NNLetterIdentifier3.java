@@ -49,8 +49,7 @@ public class NNLetterIdentifier3 implements LetterIdentifier {
 	static final String[][] DECIDERS = {
 		{ "i", "1", "i1" },
 		{ "Z", "2", "Z2" },
-		{ "E", "£", "Epound" },
-		{ "M", "l", "Ml" }
+		{ "E", "£", "Epound" }
 	};
 	
 	static final double[][] LETTER_TARGETS = new double[LETTERS.length][OUTPUT_SIZE];

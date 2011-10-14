@@ -6,6 +6,8 @@ import java.util.ArrayList;
 public class Line {
 	public ArrayList<Word> words = new ArrayList<Word>();
 	public Rectangle boundingRect = null;
+	public double avgLetterWidth = 0.0;
+	public double avgLetterHeight = 0.0;
 
 	public void add(Word w) {
 		words.add(w);
@@ -14,6 +16,8 @@ public class Line {
 		} else {
 			boundingRect.add(w.boundingRect);
 		}
+		avgLetterWidth = avgLetterWidth();
+		avgLetterHeight = avgLetterHeight();
 	}
 
 	public void regenBoundingRect() {
@@ -25,6 +29,8 @@ public class Line {
 				boundingRect.add(w.boundingRect);
 			}
 		}
+		avgLetterWidth = avgLetterWidth();
+		avgLetterHeight = avgLetterHeight();
 	}
 
 	public int xDist(Rectangle r2) {
@@ -47,7 +53,7 @@ public class Line {
 		return 0;
 	}
 
-	public double avgLetterHeight() {
+	private double avgLetterHeight() {
 		double h = 0;
 		int n = 0;
 		for (Word w : words) {
@@ -59,7 +65,7 @@ public class Line {
 		return h / n;
 	}
 
-	public double avgLetterWidth() {
+	private double avgLetterWidth() {
 		double w = 0;
 		int n = 0;
 		for (Word word : words) {

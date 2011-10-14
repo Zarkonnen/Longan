@@ -32,4 +32,11 @@ public class Word {
 			}
 		}
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		for (Letter l : letters) { sb.append(l.bestLetter() == null ? "?" : l.bestLetter()); }
+		return sb.toString();
+	}
 }

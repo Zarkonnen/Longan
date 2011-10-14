@@ -26,16 +26,14 @@ import com.zarkonnen.longan.stage.PostProcessor;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * Post-processor that takes low-scoring letters and checks if they're meant to be multiple letters,
  * by actually sawing them in half.
  */
 public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
-	static final double LOW_SCORE_BOUNDARY = 0.8;
-	static final double MIN_IMPROVEMENT = 0.05;
-	static final double ALWAYS_ACCEPT_BOUNDARY = 0.95;
+	static final double LOW_SCORE_BOUNDARY = 0.85;
+	static final double MIN_AVG_IMPROVEMENT = 0.08;
 	static final double SAW_WIDTH_TOLERANCE = 1.2;
 	
 	int q = 0;
@@ -46,27 +44,27 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 				for (Word word : line.words) {
 					lp: for (int i = 0; i < word.letters.size(); i++) {
 						Letter l = word.letters.get(i);
+						//System.out.print(l.bestLetter());
 						double bestScore = l.bestScore();
 						ArrayList<Letter> ls = new ArrayList<Letter>();
 						if (bestScore < LOW_SCORE_BOUNDARY) {
 							ArrayList<Letter> lrs = sawApart(l, result.img);
 							if (lrs == null) { continue lp; }
+							double improvement = 0.0;
 							for (Letter letter : lrs) {
 								if (letter.width == 0 || letter.height == 0) {
 									continue;
 								}
-								Letter newL = longan.letterIdentifier.identify(letter, result);
-								if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
-									newL.bestLetter().equals(l.bestLetter()))
-								{
-									continue lp;
-								}
-								ls.add(newL);
+								longan.letterIdentifier.identify(letter, result);
+								improvement += letter.bestScore() - bestScore;
+								ls.add(letter);
 							}
-							word.letters.remove(i);
-							word.letters.addAll(i, ls);
-							word.regenBoundingRect();
-							i += ls.size() - 1;
+							if (ls.size() > 0 && improvement / ls.size() >= MIN_AVG_IMPROVEMENT) {
+								word.letters.remove(i);
+								word.letters.addAll(i, ls);
+								word.regenBoundingRect();
+								i += ls.size() - 1;
+							}
 						}
 					}
 				}

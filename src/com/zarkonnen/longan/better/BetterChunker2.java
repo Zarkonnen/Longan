@@ -25,9 +25,11 @@ import com.zarkonnen.longan.data.Word;
 import com.zarkonnen.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import javax.imageio.ImageIO;
 
 public class BetterChunker2 implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 10;
@@ -72,8 +74,8 @@ public class BetterChunker2 implements Chunker {
 		ArrayList<Line> lines = new ArrayList<Line>();
 		lp: for (Letter letter : wholes) {
 			for (Line l : lines) {
-				if (l.xDist(letter) < MAX_WHOLE_X_DIST * Math.max(avgSize, l.avgLetterWidth()) &&
-					l.yDist(letter) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l.avgLetterHeight()))
+				if (l.xDist(letter) < MAX_WHOLE_X_DIST * Math.max(avgSize, l.avgLetterWidth) &&
+					l.yDist(letter) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l.avgLetterHeight))
 				{
 					l.add(new Word(letter));
 					continue lp;
@@ -89,8 +91,8 @@ public class BetterChunker2 implements Chunker {
 			for (Line l1 : lines) {
 				for (Line l2 : lines) {
 					if (l1 == l2) { continue; }
-					if (l1.xDist(l2.boundingRect) < MAX_WHOLE_X_DIST * Math.max(avgSize, l1.avgLetterWidth()) &&
-						l1.yDist(l2.boundingRect) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l1.avgLetterHeight()))
+					if (l1.xDist(l2.boundingRect) < MAX_WHOLE_X_DIST * Math.max(avgSize, l1.avgLetterWidth) &&
+						l1.yDist(l2.boundingRect) < MAX_WHOLE_Y_DIST * Math.max(avgSize, l1.avgLetterHeight))
 					{
 						for (Word word : l2.words) {
 							l1.add(word);
@@ -118,10 +120,18 @@ public class BetterChunker2 implements Chunker {
 			}
 		}
 		
-		hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });
-		hg.convolve(new double[] { 100.0 / hg.count() });
-
-		int letterToWordSpacingBoundary = hg.firstValleyEnd() + 2;
+		try {
+			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/letdist.png"));
+		} catch (Exception e) {
+			
+		}
+		
+		if (hg.count() > 100 && hg.average() > 3) {
+			hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });
+			hg.convolve(new double[] { 100.0 / hg.count() });
+		}
+		
+		int letterToWordSpacingBoundary = hg.firstValleyEnd();
 		
 		// Now arrange lines into columns.
 		Result result = new Result();
@@ -169,7 +179,7 @@ public class BetterChunker2 implements Chunker {
 							: 0.0;
 				
 				// Don't add in pieces that are too far away from the line, just ignore them.
-				if (vDist > l.avgLetterHeight() * MAX_PIECE_H_DEVIATION || hDist > l.avgLetterWidth() * MAX_PIECE_W_DEVIATION) { continue; }
+				if (vDist > l.avgLetterHeight * MAX_PIECE_H_DEVIATION || hDist > l.avgLetterWidth * MAX_PIECE_W_DEVIATION) { continue; }
 				if (bestL == null || vDist < bestVDist) {
 					bestVDist = vDist;
 					bestL = l;
