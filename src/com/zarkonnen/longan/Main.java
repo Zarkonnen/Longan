@@ -52,7 +52,7 @@ public class Main {
 		Option helpO = OptionBuilder.withDescription("print help").create("h");
 		Option versionO = OptionBuilder.withDescription("print version").create("v");
 		Option outputO = OptionBuilder.withDescription("output file").withLongOpt("out").hasArg().withArgName("file").create("o");
-		Option formatO = OptionBuilder.withDescription("output format: one of plaintext (default) and visualize (debug output in png)").hasArg().withArgName("file").withLongOpt("format").create();
+		Option formatO = OptionBuilder.withDescription("output format: one of plaintext (default) and visualize (debug output in png)").hasArg().withArgName("format").withLongOpt("format").create();
 		Option serverO = OptionBuilder.withDescription("launches server mode: Server mode reads " +
 				"command line strings one per line exactly as above. If no output file is " +
 				"specified, returns a line containing the number of output lines before the " +
