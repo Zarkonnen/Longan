@@ -31,6 +31,7 @@ import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
 import com.zarkonnen.longan.neuralnetwork.NNLI3PostProcessor;
 import com.zarkonnen.longan.neuralnetwork.NNLetterIdentifier3;
+import com.zarkonnen.longan.profilegen.Identifier;
 import com.zarkonnen.longan.simple.SimpleWordPlaintextConverter;
 import com.zarkonnen.longan.stage.*;
 import java.awt.image.BufferedImage;
@@ -52,16 +53,17 @@ public class Longan {
 		preps.add(new IntensityHistogramPreProcessor());
 		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
-		pps.add(new LetterSplittingPostProcessor());
+		/*pps.add(new LetterSplittingPostProcessor());
 		pps.add(new AggressiveLetterSplittingPostProcessor());
 		pps.add(new NNLI3PostProcessor());
-		pps.add(new HeuristicPostProcessor());
+		pps.add(new HeuristicPostProcessor());*/
 		pps.add(new SpeckleEliminator());
 		return new Longan(
 			preps,
 			new BetterLetterFinder(),
 			new BetterChunker2(),
-			new NNLetterIdentifier3(),
+			//new NNLetterIdentifier3(),
+			new Identifier(),
 			pps
 		);
 	}

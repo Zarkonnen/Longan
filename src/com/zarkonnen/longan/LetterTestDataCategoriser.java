@@ -18,6 +18,8 @@ package com.zarkonnen.longan;
 
 import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.fruitbat.atrio.ATRWriter;
+import com.zarkonnen.longan.better.BetterChunker2;
+import com.zarkonnen.longan.better.BetterLetterFinder;
 import com.zarkonnen.longan.data.Column;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
@@ -41,24 +43,38 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 public class LetterTestDataCategoriser implements KeyListener {
-	LetterFinder lf;
-	Chunker chunker;
+	Longan longan;
 	Canvas c;
-	String letter = null;
+	String letterIdentification = null;
 	BufferedImage img;
 	BufferedImage letterImg;
 	Rectangle letterR;
+	Letter prevLetter = null;
+	String prevLetterIdentification = null;
 
 	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
 	
-	public LetterTestDataCategoriser(LetterFinder lf, Chunker chunker) {
-		this.lf = lf;
-		this.chunker = chunker;
+	public LetterTestDataCategoriser(Longan l) {
+		this.longan = l;
 	}
 	
-	public void run(File sourceFile, File targetFolder) {
+	public static void main(String[] args) {
+		if (args.length != 4) {
+			System.out.println("Usage: sourceFile, targetFolder, fontName, sourceName");
+			return;
+		}
+		
+		BetterLetterFinder blf = new BetterLetterFinder();
+		BetterChunker2 bc2 = new BetterChunker2();
+		new LetterTestDataCategoriser(Longan.getDefaultImplementation()).run(new File(args[0]), new File(args[1]), args[2], args[3]);
+	}
+	
+	public void run(File sourceFile, File targetFolder, String fontName, String sourceName) {
 		HashMap<String, ATRWriter> offsetWriters = new HashMap<String, ATRWriter>();
 		HashMap<String, ATRWriter> sizeWriters = new HashMap<String, ATRWriter>();
+		HashMap<String, ATRWriter> fontWriters = new HashMap<String, ATRWriter>();
+		HashMap<String, ATRWriter> sourceWriters = new HashMap<String, ATRWriter>();
+		HashMap<String, ATRWriter> prevLetterWriters = new HashMap<String, ATRWriter>();
 		JFrame fr = new JFrame("Character identification");
 		fr.add(c = new Canvas() {
 			@Override
@@ -81,19 +97,11 @@ public class LetterTestDataCategoriser implements KeyListener {
 						100,
 						null
 				);
-				/*g.drawImage(
-						img,
-						100,
-						100,
-						100 + letterR.width,
-						100 + letterR.height,
-						letterR.x,
-						letterR.y,
-						letterR.x + letterR.width,
-						letterR.y + letterR.height,
-						null,
-						null
-				);*/
+				if (prevLetter != null) {
+					g.setColor(Color.RED);
+					g.drawRect(prevLetter.x - letterR.x + 100, prevLetter.y - letterR.y + 100, prevLetter.width, prevLetter.height);
+					g.drawString(prevLetterIdentification, prevLetter.x - letterR.x + 100, prevLetter.y - letterR.y + 100);
+				}
 			}
 		});
 		fr.addKeyListener(this);
@@ -108,15 +116,19 @@ public class LetterTestDataCategoriser implements KeyListener {
 			return;
 		}
 		HashMap<String, String> md = new HashMap<String, String>();
-		ArrayList<Letter> letters = lf.find(img, md);
-		Result result = chunker.chunk(letters, img, md);
-		letters.clear();
-		for (Column column : result.columns) {
-			for (Line line : column.lines) {
-				for (Word word : line.words) {
-					letters.addAll(word.letters);
-				}
-			}
+		Result result = longan.process(img);
+		img = result.img;
+		
+		File srcF = new File(targetFolder, "sources");
+		if (!srcF.exists()) { srcF.mkdirs(); }
+		int sourceFileID = 0;
+		while (new File(srcF, sourceFileID + ".jpg").exists()) {
+			sourceFileID++;
+		}
+		try {
+			ImageIO.write(result.img, "jpg", new File(srcF, sourceFileID + ".jpg"));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		
 		int blackWhiteBoundary = 0;
@@ -125,73 +137,124 @@ public class LetterTestDataCategoriser implements KeyListener {
 			blackWhiteBoundary = (REFERENCE_INTENSITY_BOUNDARY - intensityBoundary) * 3 / 4;
 		}
 		
-		for (Letter r : letters) {
-			letter = null;
-			letterR = r;
-			letterImg = Util.cropMaskAndAdjust(img, r, blackWhiteBoundary);
-			c.repaint();
-			while (letter == null) {
-				synchronized (this) {
-					try { this.wait(1000); } catch (InterruptedException e) {
-						JOptionPane.showMessageDialog(fr, e.getMessage());
-						fr.dispose();
-						return;
+		for (Column column : result.columns) {
+			for (Line line : column.lines) {
+				for (Word word : line.words) {
+					prevLetter = null;
+					prevLetterIdentification = null;
+					for (Letter r : word.letters) {
+						letterIdentification = null;
+						letterR = r;
+						letterImg = Util.cropMaskAndAdjust(img, r, blackWhiteBoundary);
+						c.repaint();
+						while (letterIdentification == null) {
+							synchronized (this) {
+								try { this.wait(1000); } catch (InterruptedException e) {
+									JOptionPane.showMessageDialog(fr, e.getMessage());
+									fr.dispose();
+									return;
+								}
+							}
+						}
+
+						if (!targetFolder.exists()) {
+							targetFolder.mkdirs();
+						}
+						String charS =
+								letterIdentification.equals("/")
+								? "slash"
+								: letterIdentification.equals(".")
+								? "period"
+								: letterIdentification.equals(":")
+								? "colon"
+								: letterIdentification;
+						if (!charS.toLowerCase().equals(charS)) {
+							charS = charS.toLowerCase() + "-uc";
+						}
+						File charF = new File(targetFolder, charS);
+						if (!charF.exists()) {
+							charF.mkdirs();
+						}
+
+						int n = 0;
+						while (new File(charF, n + ".png").exists()) {
+							n++;
+						}
+
+						try {
+							ImageIO.write(letterImg, "png", new File(charF, n + ".png"));
+
+							if (prevLetter != null) {
+								if (!prevLetterWriters.containsKey(charS)) {
+									File prevLetterF = new File(targetFolder, charS + "-prevletter.atr");
+									prevLetterWriters.put(charS, new ATRWriter(new FileOutputStream(prevLetterF, /*append*/true)));
+								}
+								ATRWriter w = prevLetterWriters.get(charS);
+								w.startRecord();
+								w.write("" + n);
+								w.write(prevLetterIdentification);
+								w.write("" + (r.x - prevLetter.x - prevLetter.width) * 1.0 / r.width);
+								w.endRecord();
+								w.flush();
+							}
+
+							if (!fontWriters.containsKey(charS)) {
+								File fontF = new File(targetFolder, charS + "-font.atr");
+								fontWriters.put(charS, new ATRWriter(new FileOutputStream(fontF, /*append*/true)));
+							}
+							ATRWriter w = fontWriters.get(charS);
+							w.startRecord();
+							w.write("" + n);
+							w.write(fontName);
+							w.endRecord();
+							w.flush();
+
+							if (!sourceWriters.containsKey(charS)) {
+								File sourceF = new File(targetFolder, charS + "-source.atr");
+								sourceWriters.put(charS, new ATRWriter(new FileOutputStream(sourceF, /*append*/true)));
+							}
+							w = sourceWriters.get(charS);
+							w.startRecord();
+							w.write("" + n);
+							w.write(sourceName);
+							w.write(sourceFileID + ".jpg");
+							w.write("" + r.x);
+							w.write("" + r.y);
+							w.write("" + r.width);
+							w.write("" + r.height);
+							w.endRecord();
+							w.flush();
+
+							if (!offsetWriters.containsKey(charS)) {
+								File offF = new File(targetFolder, charS + "-offset.atr");
+								offsetWriters.put(charS, new ATRWriter(new FileOutputStream(offF, /*append*/true)));
+							}
+							w = offsetWriters.get(charS);
+							w.startRecord();
+							w.write("" + n);
+							w.write("" + r.relativeLineOffset);
+							w.endRecord();
+							w.flush();
+
+							if (!sizeWriters.containsKey(charS)) {
+								File sizeF = new File(targetFolder, charS + "-size.atr");
+								sizeWriters.put(charS, new ATRWriter(new FileOutputStream(sizeF, /*append*/true)));
+							}
+							w = sizeWriters.get(charS);
+							w.startRecord();
+							w.write("" + n);
+							w.write("" + r.relativeSize);
+							w.endRecord();
+							w.flush();
+						} catch (Exception e) {
+							JOptionPane.showMessageDialog(fr, "Can't read file " + sourceFile + ":\n" + e.getMessage());
+							fr.dispose();
+							return;
+						}
+						prevLetter = r;
+						prevLetterIdentification = letterIdentification;
 					}
 				}
-			}
-			
-			if (!targetFolder.exists()) {
-				targetFolder.mkdirs();
-			}
-			String charS =
-					letter.equals("/")
-					? "slash"
-					: letter.equals(".")
-					? "period"
-					: letter.equals(":")
-					? "colon"
-					: letter;
-			if (!charS.toLowerCase().equals(charS)) {
-				charS = charS.toLowerCase() + "-uc";
-			}
-			File charF = new File(targetFolder, charS);
-			if (!charF.exists()) {
-				charF.mkdirs();
-			}
-			
-			int n = 0;
-			while (new File(charF, n + ".png").exists()) {
-				n++;
-			}
-			
-			try {
-				ImageIO.write(letterImg, "png", new File(charF, n + ".png"));
-				
-				if (!offsetWriters.containsKey(charS)) {
-					File offF = new File(targetFolder, charS + "-offset.atr");
-					offsetWriters.put(charS, new ATRWriter(new FileOutputStream(offF, /*append*/true)));
-				}
-				ATRWriter w = offsetWriters.get(charS);
-				w.startRecord();
-				w.write("" + n);
-				w.write("" + r.relativeLineOffset);
-				w.endRecord();
-				w.flush();
-				
-				if (!sizeWriters.containsKey(charS)) {
-					File sizeF = new File(targetFolder, charS + "-size.atr");
-					sizeWriters.put(charS, new ATRWriter(new FileOutputStream(sizeF, /*append*/true)));
-				}
-				w = sizeWriters.get(charS);
-				w.startRecord();
-				w.write("" + n);
-				w.write("" + r.relativeSize);
-				w.endRecord();
-				w.flush();
-			} catch (Exception e) {
-				JOptionPane.showMessageDialog(fr, "Can't read file " + sourceFile + ":\n" + e.getMessage());
-				fr.dispose();
-				return;
 			}
 		}
 		
@@ -201,15 +264,31 @@ public class LetterTestDataCategoriser implements KeyListener {
 		for (ATRWriter w : sizeWriters.values()) {
 			try { w.close(); } catch (Exception e) { e.printStackTrace(); }
 		}
+		for (ATRWriter w : fontWriters.values()) {
+			try { w.close(); } catch (Exception e) { e.printStackTrace(); }
+		}
+		for (ATRWriter w : prevLetterWriters.values()) {
+			try { w.close(); } catch (Exception e) { e.printStackTrace(); }
+		}
+		for (ATRWriter w : sourceWriters.values()) {
+			try { w.close(); } catch (Exception e) { e.printStackTrace(); }
+		}
 		
 		fr.dispose();
 	}
 
 	public void keyTyped(KeyEvent ke) {
-		letter = new String(new char[] {ke.getKeyChar()});
+		letterIdentification = new String(new char[] {ke.getKeyChar()});
 	}
 
 	public void keyPressed(KeyEvent ke) {}
 
-	public void keyReleased(KeyEvent ke) {}
+	public void keyReleased(KeyEvent ke) {
+		if (ke.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			prevLetter = null;
+			prevLetterIdentification = null;
+			c.repaint();
+			return;
+		}
+	}
 }

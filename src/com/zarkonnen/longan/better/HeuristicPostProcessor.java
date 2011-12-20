@@ -38,7 +38,7 @@ public class HeuristicPostProcessor implements PostProcessor {
 	};
 	
 	static final String[] NOT_INSIDE_WORDS = {
-		"!", "£", "%", ",", ":", ";", "?", "/"
+		"!", "£", "%", ",", ":", ";", "?"
 	};
 	
 	public void process(Result result, Longan longan) {

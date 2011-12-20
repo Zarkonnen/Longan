@@ -40,6 +40,13 @@ public class Visualizer implements ResultConverter<BufferedImage> {
 		if (thickness < 1.0f) { thickness = 1.0f; }
 		g.setStroke(new BasicStroke(thickness));
 
+		// Columns
+		g.setColor(new Color(0, 0, 0, 63));
+		for (Column c : result.columns) {
+			c.regenBoundingRect();
+			g.drawRect(c.boundingRect.x, c.boundingRect.y, c.boundingRect.width, c.boundingRect.height);
+		}
+		
 		// Letter positions
 		g.setColor(new Color(255, 0, 0, 191));
 		for (Column c : result.columns) {

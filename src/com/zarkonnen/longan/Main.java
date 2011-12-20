@@ -58,11 +58,15 @@ public class Main {
 				"specified, returns a line containing the number of output lines before the " +
 				"output. If there is an error, returns a single line with the error message. " +
 				"Shut down server by sending \"quit\".").withLongOpt("server").create();
+		Option openCLO = OptionBuilder.withDescription("enables use of the graphics card to "
+				+ "support the OCR system. Defaults to true.").withLongOpt("enable-opencl").
+				hasArg().withArgName("enabled").create();
 		options.addOption(helpO);
 		options.addOption(versionO);
 		options.addOption(outputO);
 		options.addOption(formatO);
 		options.addOption(serverO);
+		options.addOption(openCLO);
 		CommandLineParser clp = new GnuParser();
 		try {
 			CommandLine line = clp.parse(options, args);
