@@ -1,0 +1,8 @@
+{
+    "trigger": "t",
+    "font": "Courier",
+    "alternative": "1",
+    "italic": false,
+    "type": "discriminator",
+    "version": "1.0"
+}
