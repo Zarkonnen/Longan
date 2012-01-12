@@ -55,7 +55,7 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 								if (letter.width == 0 || letter.height == 0) {
 									continue;
 								}
-								longan.letterIdentifier.identify(letter, result);
+								longan.letterIdentifier.reIdentify(letter, l, word, line, c, result);
 								improvement += letter.bestScore() - bestScore;
 								ls.add(letter);
 							}

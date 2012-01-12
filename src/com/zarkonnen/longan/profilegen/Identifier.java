@@ -1,5 +1,6 @@
 package com.zarkonnen.longan.profilegen;
 
+import com.zarkonnen.longan.Metadata;
 import com.zarkonnen.longan.data.Column;
 import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.longan.data.Line;
@@ -22,7 +23,12 @@ public class Identifier implements LetterIdentifier {
 	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
 	static final double ALSO_RAN_PROMO =     0.0001;
 	static final double BEST_ALT_PROMOTION = 0.002;
+	static final Metadata.Key<Config.Identifier> IDENTIFIER_USED = Metadata.key("identifierUsed", Config.Identifier.class);
+	static final Metadata.Key<Double> AVG_LETTER_SIZE = Metadata.key("avgLetterSize", Double.class);
 	
+	HashMap<Config.Identifier, CompiledOpenCLNetwork> openCLIdentifiers = new HashMap<Config.Identifier, CompiledOpenCLNetwork>();
+	HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork> openCLDiscriminators = new HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork>();
+
 	public Identifier(Config config) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 		this.config = config;
 		ProfileGen.generateTargets(config);
@@ -35,36 +41,6 @@ public class Identifier implements LetterIdentifier {
 		} catch (Exception e) {
 			throw new RuntimeException("Could not initialise default neural network identifier.", e);
 		}
-	}
-	
-	static final class LetterClassInFont {
-		final Config.LetterClass letterClass;
-		final Config.FontType font;
-
-		public LetterClassInFont(Config.LetterClass letterClass, Config.FontType font) {
-			this.letterClass = letterClass;
-			this.font = font;
-		}
-		
-		@Override
-		public boolean equals(Object o) {
-			if (!(o instanceof LetterClassInFont)) { return false; }
-			LetterClassInFont lef2 = (LetterClassInFont) o;
-			return letterClass.equals(lef2.letterClass) && font.equals(lef2.font); 
-		}
-		
-		@Override
-		public int hashCode() { return 41 + letterClass.hashCode() * 13 + font.hashCode(); }
-	}
-	
-	static boolean done = false;
-	
-	public Letter identify(Letter l, Result result) {
-		if (!done) {
-			identify(result);
-			done = true;
-		}
-		return l;
 	}
 	
 	static final class LetterClassInIdentifier {
@@ -96,13 +72,11 @@ public class Identifier implements LetterIdentifier {
 			int blackWhiteBoundary = Integer.parseInt(result.metadata.get("blackWhiteBoundary"));
 			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
 		}
-		boolean enableOpenCL = result.metadata.get("enableOpenCL").equals("true");
-		boolean openCLTested = false;
+		boolean[] enableOpenCL = {result.metadata.get("enableOpenCL").equals("true")};
+		boolean[] openCLTested = {false};
 		HashMap<Letter, HashMap<LetterClassInIdentifier, Double>> scores = new HashMap<Letter, HashMap<LetterClassInIdentifier, Double>>();
 		HashMap<Config.Identifier, Integer> votes = new HashMap<Config.Identifier, Integer>();
 		HashMap<Letter, float[]> inputs = new HashMap<Letter, float[]>();
-		HashMap<Config.Identifier, CompiledOpenCLNetwork> openCLIdentifiers = new HashMap<Config.Identifier, CompiledOpenCLNetwork>();
-		HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork> openCLDiscriminators = new HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork>();
 		for (Column col : result.columns) {
 			ArrayList<Integer> sizes = new ArrayList<Integer>();
 			for (Line line : col.lines) { for (Word word : line.words) { for (Letter letter : word.letters) {
@@ -114,6 +88,7 @@ public class Identifier implements LetterIdentifier {
 				sizeSum += sz;
 			}
 			double avgLetterSize = sizeSum * 1.0 / (sizes.size() / 2);
+			col.metadata.put(AVG_LETTER_SIZE, avgLetterSize);
 			votes.clear();
 			scores.clear();
 			inputs.clear();
@@ -123,45 +98,8 @@ public class Identifier implements LetterIdentifier {
 			int loop = 0;
 			int votesGiven = 0;
 			for (Line line : col.lines) { for (Word w : line.words) { for (Letter letter : w.letters) {
-				float[] data = Util.getInputForNN(letter, result.img, intensityAdjustment);
-				inputs.put(letter, data);
-				HashMap<LetterClassInIdentifier, Double> lScores = new HashMap<LetterClassInIdentifier, Double>();
-				Config.Identifier identifierVote = null;
-				double bestScore = -1.0;
-				for (Config.Identifier identifier : votes.keySet()) {
-					CompiledOpenCLNetwork cocl = null;
-					if (enableOpenCL) {
-						if (openCLIdentifiers.containsKey(identifier)) {
-							cocl = openCLIdentifiers.get(identifier);
-						} else {
-							cocl = new CompiledOpenCLNetwork(identifier.network.nw);
-							try {
-								cocl.init();
-								if (!openCLTested) {
-									cocl.test();
-								}
-								openCLIdentifiers.put(identifier, cocl);
-							} catch (Exception e) {
-								System.err.println("Unable to use openCL. Switching to CPU.");
-								enableOpenCL = false;
-								cocl = null;
-							} finally {
-								openCLTested = true;
-							}
-						}
-					}
-					float[] output = cocl == null ? identifier.network.run(data) : cocl.run(data);
-					for (Config.LetterClass lc : identifier.classes) {
-						double score = score(output, lc.target);
-						if (score > bestScore) {
-							bestScore = score;
-							identifierVote = identifier;
-						}
-						lScores.put(new LetterClassInIdentifier(lc, identifier), score);
-					}
-				}
-				scores.put(letter, lScores);
-				votes.put(identifierVote, votes.get(identifierVote) + 1);
+				identifyLetter(letter, result, intensityAdjustment, inputs, votes, enableOpenCL,
+						openCLTested, scores);
 				loop++;
 				votesGiven++;
 				int currentVotesGiven = votesGiven;
@@ -185,6 +123,7 @@ public class Identifier implements LetterIdentifier {
 				}
 			}
 			// We have decided! Use the output of the bestIdentifier.
+			col.metadata.put(IDENTIFIER_USED, bestIdentifier);
 			for (Line line : col.lines) { for (Word w : line.words) { for (Letter letter : w.letters) {
 				for (Map.Entry<LetterClassInIdentifier, Double> e : scores.get(letter).entrySet()) {
 					if (e.getKey().identifier == bestIdentifier) {
@@ -195,125 +134,224 @@ public class Identifier implements LetterIdentifier {
 				}
 				
 				// Now see if we wanna apply discriminators.
-				// Phase 1: NumberOfParts
-				String best = letter.bestLetter();
-				System.out.print(best);
-				System.out.print(" " + Math.sqrt(letter.width * letter.height) / avgLetterSize);
-				String prev = best;
-				HashSet<String> alsoRans = new HashSet<String>();
-				for (Config.Discriminator discriminator : config.discriminators) {
-					if (discriminator instanceof Config.NumberOfPartsDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
-						Config.NumberOfPartsDiscriminator d = (Config.NumberOfPartsDiscriminator) discriminator;
-						int n = letter.components.size();
-						n = n == 0 ? 1 : n;
-						if (n > d.numberOfPartsBoundary != d.triggerIsAboveBoundary) {
-							best = d.alternative;
-							break;
-						}
-					}
-				}
-				alsoRans.add(best);
-				if (!best.equals(prev)) {
-					System.out.print(" -P-> " + best);
-					prev = best;
-				}
-				
-				// Phase 2: NeuralNetwork
-				double bestDiscScore = 0.5;
-				String newBestLetter = best;
-				for (Config.Discriminator discriminator : config.discriminators) {
-					if (discriminator instanceof Config.NNDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
-						Config.NNDiscriminator nnd = (Config.NNDiscriminator) discriminator;
-						CompiledOpenCLNetwork cocl = null;
-						if (enableOpenCL) {
-							if (openCLDiscriminators.containsKey(nnd)) {
-								cocl = openCLDiscriminators.get(nnd);
-							} else {
-								cocl = new CompiledOpenCLNetwork(nnd.network.nw);
-								try {
-									cocl.init();
-									if (!openCLTested) {
-										cocl.test();
-									}
-									openCLDiscriminators.put(nnd, cocl);
-								} catch (Exception e) {
-									System.err.println("Unable to use openCL. Switching to CPU.");
-									enableOpenCL = false;
-									cocl = null;
-								} finally {
-									openCLTested = true;
-								}
-							}
-						}
-						float output = cocl == null ? nnd.network.run(inputs.get(letter))[0] : cocl.run(inputs.get(letter))[0];
-						if (output > bestDiscScore) {
-							bestDiscScore = output;
-							newBestLetter = discriminator.alternative;
-						}
-						if (output > 0.5) {
-							alsoRans.add(discriminator.alternative);
-						}
-					}
-				}
-				best = newBestLetter;
-				alsoRans.add(best);
-				if (!best.equals(prev)) {
-					System.out.print(" -N-> " + best);
-					prev = best;
-				}
-				
-				// Phase 3: AspectRatio
-				for (Config.Discriminator discriminator : config.discriminators) {
-					if (discriminator instanceof Config.AspectRatioDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
-						Config.AspectRatioDiscriminator ard = (Config.AspectRatioDiscriminator) discriminator;
-						double aspectRatio = (letter.width * 1.0) / letter.height;
-						if (aspectRatio > ard.boundaryRatio != ard.triggerIsAboveBoundary) {
-							best = discriminator.alternative;
-							break;
-						}
-					}
-				}
-				if (!best.equals(prev)) {
-					System.out.print(" -A-> " + best);
-					prev = best;
-				}
-				
-				// Phase 4: Relative size
-				for (Config.Discriminator discriminator : config.discriminators) {
-					if (discriminator instanceof Config.RelativeSizeDiscriminator && discriminator.font.equals(bestIdentifier.font) &&
-						(discriminator.trigger.equals(best) || discriminator.alternative.equals(best))) {
-						double relSize = Math.sqrt(letter.width * letter.height) / avgLetterSize;
-						Config.RelativeSizeDiscriminator rsd = (Config.RelativeSizeDiscriminator) discriminator;
-						if (discriminator.trigger.equals(best)) {
-							if (relSize > rsd.boundarySize != rsd.triggerIsAboveBoundary) {
-								best = discriminator.alternative;
-								break;
-							}
-						}
-						if (discriminator.alternative.equals(best)) {
-							if (relSize > rsd.boundarySize == rsd.triggerIsAboveBoundary) {
-								best = discriminator.trigger;
-								break;
-							}
-						}
-					}
-				}
-				
-				if (!best.equals(prev)) {
-					System.out.print(" -S-> " + best);
-					prev = best;
-				}
-				
-				// Modify the scores accordingly.
-				double bestScore = letter.bestScore();
-				for (String ar : alsoRans) {
-					letter.possibleLetters.put(ar, bestScore + letter.possibleLetters.get(ar) * ALSO_RAN_PROMO);
-				}
-				letter.possibleLetters.put(best, bestScore + BEST_ALT_PROMOTION);
-				
-				System.out.println();
+				discriminateLetter(letter, avgLetterSize, bestIdentifier, enableOpenCL,
+						openCLTested, inputs);
 			} } }
 		}
+	}
+	
+	public void reIdentify(Letter l, Letter source, Word word, Line line, Column col, Result result) {
+		int intensityAdjustment = 0;
+		if (result.metadata.containsKey("blackWhiteBoundary")) {
+			int blackWhiteBoundary = Integer.parseInt(result.metadata.get("blackWhiteBoundary"));
+			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
+		}
+		boolean[] enableOpenCL = {result.metadata.get("enableOpenCL").equals("true")};
+		boolean[] openCLTested = {false};
+		HashMap<Letter, HashMap<LetterClassInIdentifier, Double>> scores = new HashMap<Letter, HashMap<LetterClassInIdentifier, Double>>();
+		HashMap<Config.Identifier, Integer> votes = new HashMap<Config.Identifier, Integer>();
+		HashMap<Letter, float[]> inputs = new HashMap<Letter, float[]>();
+		double avgLetterSize = col.metadata.get(AVG_LETTER_SIZE);
+		votes.put(col.metadata.get(IDENTIFIER_USED), 0);
+		identifyLetter(l, result, intensityAdjustment, inputs, votes, enableOpenCL, openCLTested,
+				scores);
+		for (Map.Entry<LetterClassInIdentifier, Double> e : scores.get(l).entrySet()) {
+			for (String possibleL : e.getKey().letterClass.members) {
+				l.possibleLetters.put(possibleL, e.getValue());
+			}
+		}
+		discriminateLetter(l, avgLetterSize, col.metadata.get(IDENTIFIER_USED), enableOpenCL,
+				openCLTested, inputs);
+	}
+	
+	void identifyLetter(
+			Letter letter,
+			Result result,
+			int intensityAdjustment,
+			HashMap<Letter, float[]> inputs,
+			HashMap<Config.Identifier, Integer> votes,
+			boolean[] enableOpenCL,
+			boolean[] openCLTested,
+			HashMap<Letter, HashMap<LetterClassInIdentifier, Double>> scores)
+	{
+		float[] data = Util.getInputForNN(letter, result.img, intensityAdjustment);
+		inputs.put(letter, data);
+		HashMap<LetterClassInIdentifier, Double> lScores = new HashMap<LetterClassInIdentifier, Double>();
+		Config.Identifier identifierVote = null;
+		double bestScore = -1.0;
+		for (Config.Identifier identifier : votes.keySet()) {
+			CompiledOpenCLNetwork cocl = null;
+			if (enableOpenCL[0]) {
+				if (openCLIdentifiers.containsKey(identifier)) {
+					cocl = openCLIdentifiers.get(identifier);
+				} else {
+					cocl = new CompiledOpenCLNetwork(identifier.network.nw);
+					try {
+						openCLIdentifiers.put(identifier, cocl);
+						cocl.init();
+						if (!openCLTested[0]) {
+							cocl.test();
+						}
+						
+					} catch (Exception e) {
+						System.err.println("Unable to use openCL. Switching to CPU.");
+						enableOpenCL[0] = false;
+						cocl = null;
+					} finally {
+						openCLTested[0] = true;
+					}
+				}
+			}
+			float[] output = cocl == null ? identifier.network.run(data) : cocl.run(data);
+			for (Config.LetterClass lc : identifier.classes) {
+				double score = score(output, lc.target);
+				if (score > bestScore) {
+					bestScore = score;
+					identifierVote = identifier;
+				}
+				lScores.put(new LetterClassInIdentifier(lc, identifier), score);
+			}
+		}
+		scores.put(letter, lScores);
+		votes.put(identifierVote, votes.get(identifierVote) + 1);
+	}
+	
+	void discriminateLetter(
+			Letter letter,
+			double avgLetterSize,
+			Config.Identifier bestIdentifier,
+			boolean[] enableOpenCL,
+			boolean[] openCLTested,
+			HashMap<Letter, float[]> inputs)
+	{
+		// Phase 1: NumberOfParts
+		String best = letter.bestLetter();
+		//System.out.print(best);
+		//System.out.print(" " + Math.sqrt(letter.width * letter.height) / avgLetterSize);
+		String prev = best;
+		HashSet<String> alsoRans = new HashSet<String>();
+		for (Config.Discriminator discriminator : config.discriminators) {
+			if (discriminator instanceof Config.NumberOfPartsDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
+				Config.NumberOfPartsDiscriminator d = (Config.NumberOfPartsDiscriminator) discriminator;
+				int n = letter.components.size();
+				n = n == 0 ? 1 : n;
+				if (n > d.numberOfPartsBoundary != d.triggerIsAboveBoundary) {
+					best = d.alternative;
+					break;
+				}
+			}
+		}
+		alsoRans.add(best);
+		if (!best.equals(prev)) {
+			//System.out.print(" -P-> " + best);
+			prev = best;
+		}
+
+		// Phase 2: NeuralNetwork
+		double bestDiscScore = 0.5;
+		String newBestLetter = best;
+		for (Config.Discriminator discriminator : config.discriminators) {
+			if (discriminator instanceof Config.NNDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
+				Config.NNDiscriminator nnd = (Config.NNDiscriminator) discriminator;
+				CompiledOpenCLNetwork cocl = null;
+				if (enableOpenCL[0]) {
+					if (openCLDiscriminators.containsKey(nnd)) {
+						cocl = openCLDiscriminators.get(nnd);
+					} else {
+						cocl = new CompiledOpenCLNetwork(nnd.network.nw);
+						try {
+							cocl.init();
+							if (!openCLTested[0]) {
+								cocl.test();
+							}
+							openCLDiscriminators.put(nnd, cocl);
+						} catch (Exception e) {
+							System.err.println("Unable to use openCL. Switching to CPU.");
+							enableOpenCL[0] = false;
+							cocl = null;
+						} finally {
+							openCLTested[0] = true;
+						}
+					}
+				}
+				float output = cocl == null ? nnd.network.run(inputs.get(letter))[0] : cocl.run(inputs.get(letter))[0];
+				if (output > bestDiscScore) {
+					bestDiscScore = output;
+					newBestLetter = discriminator.alternative;
+				}
+				if (output > 0.5) {
+					alsoRans.add(discriminator.alternative);
+				}
+			}
+		}
+		best = newBestLetter;
+		alsoRans.add(best);
+		if (!best.equals(prev)) {
+			//System.out.print(" -N-> " + best);
+			prev = best;
+		}
+
+		// Phase 3: AspectRatio
+		for (Config.Discriminator discriminator : config.discriminators) {
+			if (discriminator instanceof Config.AspectRatioDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
+				Config.AspectRatioDiscriminator ard = (Config.AspectRatioDiscriminator) discriminator;
+				double aspectRatio = (letter.width * 1.0) / letter.height;
+				if (aspectRatio > ard.boundaryRatio != ard.triggerIsAboveBoundary) {
+					best = discriminator.alternative;
+					break;
+				}
+			}
+		}
+		if (!best.equals(prev)) {
+			//System.out.print(" -A-> " + best);
+			prev = best;
+		}
+
+		// Phase 4: Relative size
+		for (Config.Discriminator discriminator : config.discriminators) {
+			if (discriminator instanceof Config.RelativeSizeDiscriminator && discriminator.font.equals(bestIdentifier.font) &&
+				(discriminator.trigger.equals(best) || discriminator.alternative.equals(best))) {
+				double relSize = Math.sqrt(letter.width * letter.height) / avgLetterSize;
+				Config.RelativeSizeDiscriminator rsd = (Config.RelativeSizeDiscriminator) discriminator;
+				if (discriminator.trigger.equals(best)) {
+					if (relSize > rsd.boundarySize != rsd.triggerIsAboveBoundary) {
+						best = discriminator.alternative;
+						break;
+					}
+				}
+				if (discriminator.alternative.equals(best)) {
+					if (relSize > rsd.boundarySize == rsd.triggerIsAboveBoundary) {
+						best = discriminator.trigger;
+						break;
+					}
+				}
+			}
+		}
+
+		if (!best.equals(prev)) {
+			//System.out.print(" -S-> " + best);
+			prev = best;
+		}
+
+		// Modify the scores accordingly.
+		double bestScore = letter.bestScore();
+		for (String ar : alsoRans) {
+			letter.possibleLetters.put(ar, bestScore + letter.possibleLetters.get(ar) * ALSO_RAN_PROMO);
+		}
+		letter.possibleLetters.put(best, bestScore + BEST_ALT_PROMOTION);
+
+		//System.out.println();
+	}
+	
+	public void finish() {
+		for (CompiledOpenCLNetwork n : openCLIdentifiers.values()) {
+			try { n.close(); } catch (Exception e) {}
+		}
+		for (CompiledOpenCLNetwork n : openCLDiscriminators.values()) {
+			try { n.close(); } catch (Exception e) {}
+		}
+		openCLIdentifiers.clear();
+		openCLDiscriminators.clear();
 	}
 	
 	public static float score(float[] output, float[] target) {

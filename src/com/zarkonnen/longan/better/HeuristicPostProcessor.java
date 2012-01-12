@@ -117,6 +117,14 @@ public class HeuristicPostProcessor implements PostProcessor {
 						if (allCaps && l.bestLetter().equals("l")) {
 							l.possibleLetters.put("I", l.bestScore() + 0.01);
 						}
+						
+						if (!first && l.bestLetter().equals("'") && word.letters.get(i - 1).bestLetter().equals("'")) {
+							word.letters.get(i - i).add(l);
+							word.letters.get(i - 1).possibleLetters.put("\"", word.letters.get(i - 1).bestScore() + NUDGE);
+							word.letters.remove(i);
+							i--;
+							continue;
+						}
 					}
 
 					// I/l at start of line / after !.? / alone, but not before i.

@@ -1,9 +1,11 @@
 package com.zarkonnen.longan.data;
 
+import com.zarkonnen.longan.Metadata;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
 public class Column {
+	public final Metadata metadata = new Metadata();
 	public ArrayList<Line> lines = new ArrayList<Line>();
 	public Rectangle boundingRect = null;
 	

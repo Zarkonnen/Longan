@@ -16,9 +16,14 @@ package com.zarkonnen.longan.stage;
  * limitations under the License.
  */
 
+import com.zarkonnen.longan.data.Column;
 import com.zarkonnen.longan.data.Letter;
+import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
+import com.zarkonnen.longan.data.Word;
 
 public interface LetterIdentifier {
-	public Letter identify(Letter l, Result result);
+	public void identify(Result result);
+	public void reIdentify(Letter l, Letter source, Word word, Line line, Column column, Result result);
+	public void finish();
 }

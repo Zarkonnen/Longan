@@ -120,11 +120,11 @@ public class BetterChunker2 implements Chunker {
 			}
 		}
 		
-		try {
+		/*try {
 			ImageIO.write(hg.toImage(), "png", new File("/Users/zar/Desktop/letdist.png"));
 		} catch (Exception e) {
 			
-		}
+		}*/
 		
 		if (hg.count() > 100 && hg.average() > 3) {
 			hg.convolve(new double[] { 0.05, 0.15, 0.2, 0.15, 0.05 });

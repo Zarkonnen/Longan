@@ -49,13 +49,13 @@ public class LetterSplittingPostProcessor implements PostProcessor {
 							for (Letter lr : l.components) {
 								// Ignore fragments, they're probably what messed this up.
 								if (lr.fragment) { continue; }
-								Letter newL = longan.letterIdentifier.identify(lr, result);
-								if (newL.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
-									newL.bestLetter().equals(l.bestLetter()))
+								longan.letterIdentifier.reIdentify(lr, l, word, line, c, result);
+								if (lr.bestScore() < Math.min(ALWAYS_ACCEPT_BOUNDARY, bestScore + MIN_IMPROVEMENT) ||
+									lr.bestLetter().equals(l.bestLetter()))
 								{
 									continue lp;
 								}
-								ls.add(newL);
+								ls.add(lr);
 							}
 							word.letters.remove(i);
 							word.letters.addAll(i, ls);
