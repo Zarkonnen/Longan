@@ -115,7 +115,7 @@ public class ProfileGen {
 						cocl.init();
 						cocl.test();
 					} catch (Exception e) {
-						System.out.println("Unable to use openCL. Switching to CPU.");
+						System.err.println("Unable to use openCL. Switching to CPU.");
 						enableOpenCL = false;
 					}
 				}

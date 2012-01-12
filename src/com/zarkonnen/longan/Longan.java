@@ -42,6 +42,7 @@ import java.util.List;
 public class Longan {
 	public static final String VERSION = "0.9";
 	
+	public final boolean enableOpenCL;
 	public final List<PreProcessor> preProcessors;
 	public final LetterFinder letterFinder;
 	public final LetterIdentifier letterIdentifier;
@@ -49,6 +50,10 @@ public class Longan {
 	public final List<PostProcessor> postProcessors;
 
 	public static Longan getDefaultImplementation() {
+		return getDefaultImplementation(true);
+	}
+	
+	public static Longan getDefaultImplementation(boolean enableOpenCL) {
 		ArrayList<PreProcessor> preps = new ArrayList<PreProcessor>();
 		preps.add(new IntensityHistogramPreProcessor());
 		preps.add(new RotationFixingPreProcessor());
@@ -64,7 +69,8 @@ public class Longan {
 			new BetterChunker2(),
 			//new NNLetterIdentifier3(),
 			new Identifier(),
-			pps
+			pps,
+			enableOpenCL
 		);
 	}
 	
@@ -77,17 +83,20 @@ public class Longan {
 			LetterFinder letterFinder,
 			Chunker chunker,
 			LetterIdentifier letterIdentifier,
-			List<PostProcessor> postProcessors)
+			List<PostProcessor> postProcessors,
+			boolean enableOpenCL)
 	{
 		this.preProcessors = preProcessors;
 		this.letterFinder = letterFinder;
 		this.letterIdentifier = letterIdentifier;
 		this.chunker = chunker;
 		this.postProcessors = postProcessors;
+		this.enableOpenCL = enableOpenCL;
 	}
 
 	public Result process(BufferedImage img) {
 		HashMap<String, String> metadata = new HashMap<String, String>();
+		metadata.put("enableOpenCL", "" + enableOpenCL);
 		for (PreProcessor pp : preProcessors) {
 			img = pp.process(img, metadata);
 		}

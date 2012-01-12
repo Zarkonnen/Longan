@@ -5,7 +5,7 @@ import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
-import com.zarkonnen.longan.profilegen.ProfileGen.FloatArray;
+import com.zarkonnen.longan.opencl.CompiledOpenCLNetwork;
 import com.zarkonnen.longan.profilegen.network.Util;
 import com.zarkonnen.longan.stage.LetterIdentifier;
 import java.io.UnsupportedEncodingException;
@@ -30,7 +30,6 @@ public class Identifier implements LetterIdentifier {
 	
 	public Identifier() {
 		try {
-			//config = NetworkIO.readArchive(Identifier.class.getResourceAsStream("default.zip"));
 			config = NetworkIO.readDefaultArchive();
 			ProfileGen.generateTargets(config);
 		} catch (Exception e) {
@@ -66,34 +65,6 @@ public class Identifier implements LetterIdentifier {
 			done = true;
 		}
 		return l;
-		/*int intensityAdjustment = 0;
-		if (result.metadata.containsKey("blackWhiteBoundary")) {
-			int blackWhiteBoundary = Integer.parseInt(result.metadata.get("blackWhiteBoundary"));
-			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
-		}
-		double[] data = Util.getInputForNN(l, result.img, intensityAdjustment);
-		HashMap<LetterClassInFont, Double> scores = new HashMap<LetterClassInFont, Double>();
-		for (Config.Identifier identifier : config.identifiers) {
-			double[] output = identifier.network.run(data);
-			for (Config.LetterClass lc : identifier.classes) {
-				scores.put(new LetterClassInFont(lc, identifier.font), score(output, lc.target));
-			}
-		}
-		// Now we should really be doing:
-		// - decide what font this column / word has
-		// - filter down to that font
-		// - apply any discriminators necessary
-		// But because we can just see a single letter, we're just gonna boil this down to the best
-		// score for each letter, and damn the fact that scores can come from different fonts.
-		for (Map.Entry<LetterClassInFont, Double> e : scores.entrySet()) {
-			for (String letter : e.getKey().letterClass.members) {
-				if (!l.possibleLetters.containsKey(letter) || l.possibleLetters.get(letter) < e.getValue()) {
-					l.possibleLetters.put(letter, e.getValue());
-				}
-			}
-		} 
-		
-		return l;*/
 	}
 	
 	static final class LetterClassInIdentifier {
@@ -125,9 +96,13 @@ public class Identifier implements LetterIdentifier {
 			int blackWhiteBoundary = Integer.parseInt(result.metadata.get("blackWhiteBoundary"));
 			intensityAdjustment = (REFERENCE_INTENSITY_BOUNDARY - blackWhiteBoundary) * 3 / 4;
 		}
+		boolean enableOpenCL = result.metadata.get("enableOpenCL").equals("true");
+		boolean openCLTested = false;
 		HashMap<Letter, HashMap<LetterClassInIdentifier, Double>> scores = new HashMap<Letter, HashMap<LetterClassInIdentifier, Double>>();
 		HashMap<Config.Identifier, Integer> votes = new HashMap<Config.Identifier, Integer>();
-		HashMap<Letter, FloatArray> inputs = new HashMap<Letter, FloatArray>();
+		HashMap<Letter, float[]> inputs = new HashMap<Letter, float[]>();
+		HashMap<Config.Identifier, CompiledOpenCLNetwork> openCLIdentifiers = new HashMap<Config.Identifier, CompiledOpenCLNetwork>();
+		HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork> openCLDiscriminators = new HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork>();
 		for (Column col : result.columns) {
 			ArrayList<Integer> sizes = new ArrayList<Integer>();
 			for (Line line : col.lines) { for (Word word : line.words) { for (Letter letter : word.letters) {
@@ -149,12 +124,33 @@ public class Identifier implements LetterIdentifier {
 			int votesGiven = 0;
 			for (Line line : col.lines) { for (Word w : line.words) { for (Letter letter : w.letters) {
 				float[] data = Util.getInputForNN(letter, result.img, intensityAdjustment);
-				inputs.put(letter, new FloatArray(data));
+				inputs.put(letter, data);
 				HashMap<LetterClassInIdentifier, Double> lScores = new HashMap<LetterClassInIdentifier, Double>();
 				Config.Identifier identifierVote = null;
 				double bestScore = -1.0;
 				for (Config.Identifier identifier : votes.keySet()) {
-					float[] output = identifier.network.run(data);
+					CompiledOpenCLNetwork cocl = null;
+					if (enableOpenCL) {
+						if (openCLIdentifiers.containsKey(identifier)) {
+							cocl = openCLIdentifiers.get(identifier);
+						} else {
+							cocl = new CompiledOpenCLNetwork(identifier.network.nw);
+							try {
+								cocl.init();
+								if (!openCLTested) {
+									cocl.test();
+								}
+								openCLIdentifiers.put(identifier, cocl);
+							} catch (Exception e) {
+								System.err.println("Unable to use openCL. Switching to CPU.");
+								enableOpenCL = false;
+								cocl = null;
+							} finally {
+								openCLTested = true;
+							}
+						}
+					}
+					float[] output = cocl == null ? identifier.network.run(data) : cocl.run(data);
 					for (Config.LetterClass lc : identifier.classes) {
 						double score = score(output, lc.target);
 						if (score > bestScore) {
@@ -227,7 +223,29 @@ public class Identifier implements LetterIdentifier {
 				String newBestLetter = best;
 				for (Config.Discriminator discriminator : config.discriminators) {
 					if (discriminator instanceof Config.NNDiscriminator && discriminator.font.equals(bestIdentifier.font) && discriminator.trigger.equals(best)) {
-						float output = ((Config.NNDiscriminator) discriminator).network.run(inputs.get(letter).data)[0];
+						Config.NNDiscriminator nnd = (Config.NNDiscriminator) discriminator;
+						CompiledOpenCLNetwork cocl = null;
+						if (enableOpenCL) {
+							if (openCLDiscriminators.containsKey(nnd)) {
+								cocl = openCLDiscriminators.get(nnd);
+							} else {
+								cocl = new CompiledOpenCLNetwork(nnd.network.nw);
+								try {
+									cocl.init();
+									if (!openCLTested) {
+										cocl.test();
+									}
+									openCLDiscriminators.put(nnd, cocl);
+								} catch (Exception e) {
+									System.err.println("Unable to use openCL. Switching to CPU.");
+									enableOpenCL = false;
+									cocl = null;
+								} finally {
+									openCLTested = true;
+								}
+							}
+						}
+						float output = cocl == null ? nnd.network.run(inputs.get(letter))[0] : cocl.run(inputs.get(letter))[0];
 						if (output > bestDiscScore) {
 							bestDiscScore = output;
 							newBestLetter = discriminator.alternative;

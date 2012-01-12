@@ -78,8 +78,14 @@ public class Main {
 				System.out.println(Longan.VERSION);
 				System.exit(0);
 			}
+			boolean enableOpenCL = true;
+			if (line.hasOption("enable-opencl")) {
+				enableOpenCL =
+						line.getOptionValue("enable-opencl").toLowerCase().equals("true") ||
+						line.getOptionValue("enable-opencl").equals("1");
+			}
 			if (line.hasOption("server")) {
-				Longan longan = Longan.getDefaultImplementation();
+				Longan longan = Longan.getDefaultImplementation(enableOpenCL);
 				BufferedReader inputR = new BufferedReader(new InputStreamReader(System.in));
 				while (true) {
 					String input = inputR.readLine();
@@ -147,6 +153,7 @@ public class Main {
 					}
 				} // End server loop
 			} else {
+				// Single invocation
 				File outFile = null;
 				if (line.hasOption("o")) {
 					outFile = new File(line.getOptionValue("o"));
@@ -176,7 +183,7 @@ public class Main {
 				}
 				
 				try {
-					Result result = Longan.getDefaultImplementation().process(ImageIO.read(inFile));
+					Result result = Longan.getDefaultImplementation(enableOpenCL).process(ImageIO.read(inFile));
 					if (outFile == null) {
 						String txt = DEFAULT_FORMAT.convert(result);
 						System.out.print(txt);
