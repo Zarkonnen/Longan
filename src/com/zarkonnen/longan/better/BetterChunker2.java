@@ -25,11 +25,9 @@ import com.zarkonnen.longan.data.Word;
 import com.zarkonnen.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import javax.imageio.ImageIO;
 
 public class BetterChunker2 implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 10;

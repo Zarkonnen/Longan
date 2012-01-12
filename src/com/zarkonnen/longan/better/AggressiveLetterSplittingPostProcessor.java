@@ -32,11 +32,63 @@ import java.util.ArrayList;
  * by actually sawing them in half.
  */
 public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
-	static final double LOW_SCORE_BOUNDARY = 0.85;
-	static final double MIN_AVG_IMPROVEMENT = 0.08;
+	static final double LOW_SCORE_BOUNDARY  = 0.85;
+	static final double MIN_AVG_IMPROVEMENT = 0.01;
 	static final double SAW_WIDTH_TOLERANCE = 1.2;
+	static final int    MAX_RECURSION       = 3;
+	static final double OVERSIZE_THRESHOLD  = 1.5;
+	static final double OVERSIZE_ASPECT_THRESHOLD = 1.6;
+	static final double OVERSIZE_LOW_SCORE_BOUNDARY  = 0.93;
 	
 	int q = 0;
+	
+	ArrayList<Letter> split(Letter l, Letter source, Word word, Line line, Column c, Result result, Longan longan, double improvementThreshold, int recursion) {
+		ArrayList<Letter> output = new ArrayList<Letter>();
+		ArrayList<Letter> lrs = sawApart(l, result.img);
+		if (lrs == null) { return null; }
+		for (Letter letter : lrs) {
+			if (letter.width == 0 || letter.height == 0) {
+				continue;
+			}
+			
+			longan.letterIdentifier.reIdentify(letter, source, word, line, c, result);
+			
+			double bestScore = letter.bestScore();
+			if (bestScore < improvementThreshold) {
+				if (recursion == MAX_RECURSION) {
+					return null;
+				} else {
+					ArrayList<Letter> sub = split(letter, source, word, line, c, result, longan,
+							improvementThreshold, recursion + 1);
+					if (sub == null) {
+						return null;
+					} else {
+						output.addAll(sub);
+					}
+				}
+			} else {
+				boolean oversize = bestScore < OVERSIZE_LOW_SCORE_BOUNDARY &&
+						l.relativeSize > OVERSIZE_THRESHOLD &&
+						l.width / l.height > OVERSIZE_ASPECT_THRESHOLD;
+				if (oversize) {
+					ArrayList<Letter> sub = split(letter, source, word, line, c, result, longan,
+							bestScore, recursion + 1);
+					if (sub == null) {
+						output.add(letter);
+					} else {
+						output.addAll(sub);
+					}
+				} else {
+					output.add(letter);
+				}
+			}
+		}
+		
+		//for (int i = 0; i < recursion; i++) { System.out.print(" "); }
+		//System.out.println(output);
+		
+		return output.isEmpty() ? null : output;
+	}
 	
 	public void process(Result result, Longan longan) {
 		for (Column c : result.columns) {
@@ -46,8 +98,13 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 						Letter l = word.letters.get(i);
 						//System.out.print(l.bestLetter());
 						double bestScore = l.bestScore();
-						ArrayList<Letter> ls = new ArrayList<Letter>();
-						if (bestScore < LOW_SCORE_BOUNDARY) {
+						//ArrayList<Letter> ls = new ArrayList<Letter>();
+						boolean oversize = bestScore < OVERSIZE_LOW_SCORE_BOUNDARY &&
+							l.relativeSize > OVERSIZE_THRESHOLD &&
+							l.width / l.height > OVERSIZE_ASPECT_THRESHOLD &&
+							bestScore >= LOW_SCORE_BOUNDARY;
+						if (bestScore < LOW_SCORE_BOUNDARY || oversize) {
+							/*if (l.bestLetter().equals("-")) { System.out.println("- " + (int) (l.bestScore() * 100)); }
 							ArrayList<Letter> lrs = sawApart(l, result.img);
 							if (lrs == null) { continue lp; }
 							double improvement = 0.0;
@@ -58,12 +115,23 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 								longan.letterIdentifier.reIdentify(letter, l, word, line, c, result);
 								improvement += letter.bestScore() - bestScore;
 								ls.add(letter);
+								if (l.bestLetter().equals("-")) {
+									System.out.println(letter.bestLetter() + " " + (int) (letter.bestScore() * 100));
+								}
 							}
+							System.out.println();
 							if (ls.size() > 0 && improvement / ls.size() >= MIN_AVG_IMPROVEMENT) {
 								word.letters.remove(i);
 								word.letters.addAll(i, ls);
 								word.regenBoundingRect();
 								i += ls.size() - 1;
+							}*/
+							ArrayList<Letter> newLs = split(l, l, word, line, c, result, longan,
+									oversize ? 0.5 : (bestScore + MIN_AVG_IMPROVEMENT), 0);
+							if (newLs != null) {
+								word.letters.remove(i);
+								word.letters.addAll(i, newLs);
+								i += newLs.size() - 1;
 							}
 						}
 					}

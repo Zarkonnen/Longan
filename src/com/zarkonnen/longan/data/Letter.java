@@ -103,6 +103,8 @@ public class Letter extends Rectangle {
 	}
 	
 	void cropVertically() {
+		int oldWidth = width;
+		int oldHeight = height;
 		int topCrop = 0;
 		crop: while (topCrop < height) {
 			for (int mx = 0; mx < width; mx++) {
@@ -128,7 +130,7 @@ public class Letter extends Rectangle {
 			y += topCrop;
 			height -= topCrop + bottomCrop;
 			relativeLineOffset = 0; // qqDPS
-			relativeSize = Math.sqrt(width * height);
+			relativeSize = relativeSize * Math.sqrt(width * height) / Math.sqrt(oldWidth * oldHeight);
 		}
 	}
 	
