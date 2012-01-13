@@ -49,16 +49,20 @@ public class HeuristicPostProcessor implements PostProcessor {
 				for (Word word : line.words) {
 					// Check for all-capsiness and numberiness.
 					int caps = 0;
+					int lowers = 0;
 					int nums = 0;
 					for (Letter l : word.letters) {
 						if (l.bestLetter().matches("[A-Z]")) {
 							caps++;
 						}
+						if (l.bestLetter().matches("[a-z]")) {
+							lowers++;
+						}
 						if (l.bestLetter().matches("[0-9£$%.-/:]")) {
 							nums++;
 						}
 					}
-					boolean allCaps = caps > word.letters.size() / 2;
+					boolean allCaps = caps > lowers;
 					boolean allNums = nums > word.letters.size() / 2;
 					for (int i = 0; i < word.letters.size(); i++) {
 						Letter l = word.letters.get(i);

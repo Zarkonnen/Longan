@@ -26,6 +26,8 @@ import com.zarkonnen.longan.stage.PostProcessor;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Post-processor that takes low-scoring letters and checks if they're meant to be multiple letters,
@@ -33,18 +35,16 @@ import java.util.ArrayList;
  */
 public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 	static final double LOW_SCORE_BOUNDARY  = 0.85;
-	static final double MIN_AVG_IMPROVEMENT = 0.01;
+	static final double RECURSE_COST        = 0.03;
 	static final double SAW_WIDTH_TOLERANCE = 1.2;
 	static final int    MAX_RECURSION       = 3;
-	static final double OVERSIZE_THRESHOLD  = 1.5;
-	static final double OVERSIZE_ASPECT_THRESHOLD = 1.6;
-	static final double OVERSIZE_THRESHOLD_2  = 1.1;
-	static final double OVERSIZE_ASPECT_THRESHOLD_2 = 1.2;
-	static final double OVERSIZE_LOW_SCORE_BOUNDARY  = 0.93;
+	
+	static final double MAX_SZ_DEV = 1.8;
 	
 	int q = 0;
 	
-	ArrayList<Letter> split(Letter srcLetter, Letter topLetter, Word word, Line line, Column c, Result result, Longan longan, double improvementThreshold, int recursion) {
+	ArrayList<Letter> split(Letter srcLetter, Letter topLetter, Word word, Line line, Column c, Result result, Longan longan, int recursion) {
+		if (recursion > MAX_RECURSION) { return null; }
 		ArrayList<Letter> output = new ArrayList<Letter>();
 		ArrayList<Letter> lrs = sawApart(srcLetter, result.img);
 		if (lrs == null) { return null; }
@@ -54,88 +54,47 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 			}
 			
 			longan.letterIdentifier.reIdentify(letter, topLetter, word, line, c, result);
-			String bestLetter = letter.bestLetter(); // qqDPS
-			double bestScore = letter.bestScore();
-			if (bestScore < improvementThreshold) {
-				if (recursion == MAX_RECURSION) {
-					return null;
-				} else {
-					ArrayList<Letter> sub = split(letter, topLetter, word, line, c, result, longan,
-							improvementThreshold, recursion + 1);
-					if (sub == null) {
-						return null;
-					} else {
-						output.addAll(sub);
-					}
-				}
+			ArrayList<Letter> sub = split(letter, topLetter, word, line, c, result, longan, recursion + 1);
+			if (sub == null) {
+				output.add(letter);
 			} else {
-				boolean oversize = bestScore < OVERSIZE_LOW_SCORE_BOUNDARY &&
-						letter.relativeSize > OVERSIZE_THRESHOLD_2 &&
-						letter.width / letter.height > OVERSIZE_ASPECT_THRESHOLD_2;
-				if (oversize) {
-					ArrayList<Letter> sub = split(letter, topLetter, word, line, c, result, longan,
-							bestScore, recursion + 1);
-					if (sub == null) {
-						output.add(letter);
-					} else {
-						output.addAll(sub);
-					}
-				} else {
-					output.add(letter);
-				}
+				output.addAll(sub);
 			}
 		}
 		
-		//for (int i = 0; i < recursion; i++) { System.out.print(" "); }
-		//System.out.println(output);
-		
-		return output.isEmpty() ? null : output;
+		return output.isEmpty() || worstScoreIn(output) - RECURSE_COST < bestPlausibleScore(srcLetter) ? null : output;
+	}
+	
+	double bestPlausibleScore(Letter l) {
+		double score = 0.0;
+		HashMap<String, Double> expectedSizes = new HashMap<String, Double>(); // qqDPS Source this!
+		expectedSizes.put("-", 0.4);
+		for (Map.Entry<String, Double> e : l.possibleLetters.entrySet()) {
+			if (expectedSizes.containsKey(e.getKey()) &&
+				l.relativeSize > expectedSizes.get(e.getKey()) * MAX_SZ_DEV)
+			{
+				continue;
+			}
+			score = Math.max(score, e.getValue());
+		}
+		return score;
+	}
+	
+	double worstScoreIn(ArrayList<Letter> list) {
+		double ws = 1;
+		for (Letter l : list) { ws = Math.min(ws, bestPlausibleScore(l)); }
+		return ws;
 	}
 	
 	public void process(Result result, Longan longan) {
 		for (Column c : result.columns) {
 			for (Line line : c.lines) {
-				
 				for (Word word : line.words) {
-					//System.out.println(q++ + word.toString());
-					if (q++ == 35) {
-						int x = 3;
-					}
 					lp: for (int i = 0; i < word.letters.size(); i++) {
 						Letter l = word.letters.get(i);
-						//System.out.print(l.bestLetter());
-						double bestScore = l.bestScore();
-						String bestLetter = l.bestLetter(); // qqDPS
-						//ArrayList<Letter> ls = new ArrayList<Letter>();
-						boolean oversize = bestScore < OVERSIZE_LOW_SCORE_BOUNDARY &&
-							l.relativeSize > OVERSIZE_THRESHOLD &&
-							l.width / l.height > OVERSIZE_ASPECT_THRESHOLD &&
-							bestScore >= LOW_SCORE_BOUNDARY;
-						if (bestScore < LOW_SCORE_BOUNDARY || oversize) {
-							/*if (l.bestLetter().equals("-")) { System.out.println("- " + (int) (l.bestScore() * 100)); }
-							ArrayList<Letter> lrs = sawApart(l, result.img);
-							if (lrs == null) { continue lp; }
-							double improvement = 0.0;
-							for (Letter letter : lrs) {
-								if (letter.width == 0 || letter.height == 0) {
-									continue;
-								}
-								longan.letterIdentifier.reIdentify(letter, l, word, line, c, result);
-								improvement += letter.bestScore() - bestScore;
-								ls.add(letter);
-								if (l.bestLetter().equals("-")) {
-									System.out.println(letter.bestLetter() + " " + (int) (letter.bestScore() * 100));
-								}
-							}
-							System.out.println();
-							if (ls.size() > 0 && improvement / ls.size() >= MIN_AVG_IMPROVEMENT) {
-								word.letters.remove(i);
-								word.letters.addAll(i, ls);
-								word.regenBoundingRect();
-								i += ls.size() - 1;
-							}*/
-							ArrayList<Letter> newLs = split(l, l, word, line, c, result, longan,
-									oversize ? 0.5 : (bestScore + MIN_AVG_IMPROVEMENT), 0);
+						double sc = bestPlausibleScore(l);
+						if (sc < LOW_SCORE_BOUNDARY) {
+							ArrayList<Letter> newLs = split(l, l, word, line, c, result, longan, 0);
 							if (newLs != null) {
 								word.letters.remove(i);
 								word.letters.addAll(i, newLs);
