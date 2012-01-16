@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
 import java.awt.Rectangle;
 import com.zarkonnen.longan.data.Letter;
@@ -8,8 +8,7 @@ import java.util.List;
 import com.zarkonnen.fruitbat.atrio.ATRReader;
 import com.zarkonnen.longan.Longan;
 import com.zarkonnen.longan.better.BetterLetterFinder;
-import com.zarkonnen.longan.opencl.CompiledOpenCLNetwork;
-import com.zarkonnen.longan.profilegen.network.Util;
+import com.zarkonnen.longan.nnidentifier.network.Util;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -43,7 +42,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import static com.zarkonnen.longan.profilegen.network.Util.*;
+import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 
 public class ProfileGen {
 	static final String INVOCATION = "java -jar profilegen.jar [OPTIONS] [INPUT FILE(S)]";

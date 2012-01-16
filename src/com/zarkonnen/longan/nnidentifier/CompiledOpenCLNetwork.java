@@ -1,23 +1,26 @@
-package com.zarkonnen.longan.opencl;
+package com.zarkonnen.longan.nnidentifier;
 
 import com.jogamp.opencl.CLKernel;
 import com.jogamp.opencl.CLProgram;
-import com.zarkonnen.longan.profilegen.network.Node;
+import com.zarkonnen.longan.nnidentifier.FastLoadingNetwork.FastLayer;
+import com.zarkonnen.longan.nnidentifier.network.Node;
 import com.jogamp.opencl.CLBuffer;
 import com.jogamp.opencl.CLCommandQueue;
 import com.jogamp.opencl.CLContext;
 import com.jogamp.opencl.CLDevice;
-import com.zarkonnen.longan.profilegen.network.Layer;
-import com.zarkonnen.longan.profilegen.network.Network;
+import com.zarkonnen.longan.nnidentifier.network.Layer;
+import com.zarkonnen.longan.nnidentifier.network.Network;
 import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import static java.lang.Math.*;
 import static com.jogamp.opencl.CLMemory.Mem.*;
 
 public class CompiledOpenCLNetwork {
 	Network n;
+	FastLoadingNetwork fln;
 	CLBuffer<FloatBuffer> input; 
 	int outputSize;
 	ArrayList<CompiledLayer> layers;
@@ -32,6 +35,10 @@ public class CompiledOpenCLNetwork {
 		this.n = n;
 	}
 	
+	public CompiledOpenCLNetwork(FastLoadingNetwork fln) {
+		this.fln = fln;
+	}
+	
 	public void init() throws IOException {
 		context = CLContext.create();
 		CLDevice device = context.getMaxFlopsDevice();
@@ -41,12 +48,21 @@ public class CompiledOpenCLNetwork {
 		nnK              = program.createCLKernel("nn");
 		nn4InputsNoBiasK = program.createCLKernel("nn4InputsNoBias");
 		
-		input = context.createFloatBuffer(n.layers.get(0).nodes.size(), READ_ONLY);
-		outputSize = n.layers.get(n.layers.size() - 1).nodes.size();
-		
 		layers = new ArrayList<CompiledLayer>();
-		for (int i = 1; i < n.layers.size(); i++) {
-			layers.add(new CompiledLayer(n.layers.get(i), n.layers.get(i - 1), context, queue));
+		if (fln != null) {
+			input = context.createFloatBuffer(fln.inputSize, READ_ONLY);
+			outputSize = fln.layers.get(fln.layers.size() - 1).numNodes;
+			
+			for (int i = 0; i < fln.layers.size(); i++) {
+				layers.add(new CompiledLayer(fln.layers.get(i)));
+			}
+		} else {
+			input = context.createFloatBuffer(n.layers.get(0).nodes.size(), READ_ONLY);
+			outputSize = n.layers.get(n.layers.size() - 1).nodes.size();
+
+			for (int i = 1; i < n.layers.size(); i++) {
+				layers.add(new CompiledLayer(n.layers.get(i), n.layers.get(i - 1)));
+			}
 		}
 	}
 	
@@ -57,7 +73,7 @@ public class CompiledOpenCLNetwork {
 	}
 	
 	public void test() {
-		run(new float[n.layers.get(0).nodes.size()]);
+		run(new float[fln != null ? fln.inputSize : n.layers.get(0).nodes.size()]);
 	}
 	
 	public float[] run(float[] inputArray) {
@@ -83,7 +99,7 @@ public class CompiledOpenCLNetwork {
 		CLBuffer<FloatBuffer> nextLayer; 
 		CLBuffer<IntBuffer>   connections; 
 		
-		CompiledLayer(Layer layer, Layer prevLayer, CLContext context, CLCommandQueue queue) {
+		CompiledLayer(Layer layer, Layer prevLayer) {
 			// Analyse the layer.
 			numNodes = layer.nodes.size();
 			hasBias = hasBias(layer);
@@ -116,6 +132,10 @@ public class CompiledOpenCLNetwork {
 			}
 			
 			// Upload layer data.
+			upload(connectionsA, weightsA, biasesA);
+		}
+		
+		void upload(int[] connectionsA, float[] weightsA, float[] biasesA) {
 			weights = context.createFloatBuffer(weightsA.length, READ_ONLY);
 				weights.getBuffer().put(weightsA).rewind();
 				queue.putWriteBuffer(weights, false);
@@ -126,6 +146,26 @@ public class CompiledOpenCLNetwork {
 				connections.getBuffer().put(connectionsA).rewind();
 				queue.putWriteBuffer(connections, false);
 			nextLayer = context.createFloatBuffer(numNodes, READ_WRITE);
+		}
+
+		private CompiledLayer(FastLayer layer) {
+			numNodes  = layer.numNodes;
+			hasBias   = layer.hasBias;
+			numInputs = 0;
+			for (int i = 0; i < numNodes; i++) {
+				numInputs = Math.max(numInputs, layer.numConnections[i]);
+			}
+			total = numInputs * numNodes;
+			int[]   connectionsA = new int  [total];
+			float[] weightsA     = new float[total];
+			for (int n = 0; n < numNodes; n++) {
+				System.arraycopy(layer.connections, layer.connectionOffsets[n], connectionsA,
+						n * numInputs, layer.numConnections[n]);
+				for (int c = 0; c < layer.numConnections[n]; c++) {
+					weightsA[n * numInputs + c] = layer.weights[layer.weightConnections[layer.connectionOffsets[n] + c]];
+				}
+			}
+			upload(connectionsA, weightsA, layer.biases);
 		}
 		
 		CLBuffer<FloatBuffer> run(CLBuffer<FloatBuffer> input) {
@@ -143,7 +183,7 @@ public class CompiledOpenCLNetwork {
 	}
 	
 	// NB: Horrible.
-	static boolean hasBias(Layer layer) {
+	public static boolean hasBias(Layer layer) {
 		return layer.nodes.get(0).incoming.get(layer.nodes.get(0).incoming.size() - 1).input.name.toLowerCase().contains("bias");
 	}
 	

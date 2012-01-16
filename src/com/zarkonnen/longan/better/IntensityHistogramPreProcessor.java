@@ -3,10 +3,9 @@ package com.zarkonnen.longan.better;
 import com.zarkonnen.longan.Histogram;
 import com.zarkonnen.longan.stage.PreProcessor;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.util.HashMap;
-import javax.imageio.ImageIO;
 
 /*
  * Copyright 2011 David Stark
@@ -32,11 +31,15 @@ public class IntensityHistogramPreProcessor implements PreProcessor {
 	public static Histogram generate(BufferedImage img) {
 		Histogram hg = new Histogram(256);
 		
-		final int h = img.getHeight();
-		final int w = img.getWidth();
+		BufferedImage img2 = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.drawImage(img, 0, 0, 100, 100, null);
+		
+		final int h = img2.getHeight();
+		final int w = img2.getWidth();
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < w; x++) {
-				Color c = new Color(img.getRGB(x, y));
+				Color c = new Color(img2.getRGB(x, y));
 				int intensity = (c.getRed() + c.getGreen() + c.getBlue()) / 3;
 				hg.add(intensity);
 			}
@@ -44,7 +47,7 @@ public class IntensityHistogramPreProcessor implements PreProcessor {
 		
 		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
 		hg.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
-		hg.convolve(new double[] { 3000.0 / img.getWidth() / img.getHeight() }); // Get rid of minor wobbles
+		hg.convolve(new double[] { 3000.0 / img2.getWidth() / img2.getHeight() }); // Get rid of minor wobbles
 		
 		return hg;
 	}

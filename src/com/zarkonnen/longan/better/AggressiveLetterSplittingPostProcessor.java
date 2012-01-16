@@ -22,7 +22,7 @@ import com.zarkonnen.longan.data.Column;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
-import com.zarkonnen.longan.profilegen.Identifier;
+import com.zarkonnen.longan.nnidentifier.Identifier;
 import com.zarkonnen.longan.stage.PostProcessor;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -35,7 +35,7 @@ import java.util.Map;
  * by actually sawing them in half.
  */
 public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
-	static final double LOW_SCORE_BOUNDARY  = 0.85;
+	static final double LOW_SCORE_BOUNDARY  = 0.75;
 	static final double RECURSE_COST        = 0.03;
 	static final double SAW_WIDTH_TOLERANCE = 1.2;
 	static final int    MAX_RECURSION       = 3;

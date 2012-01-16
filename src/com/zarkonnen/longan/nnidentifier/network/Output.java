@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen.network;
+package com.zarkonnen.longan.nnidentifier.network;
 
 public class Output {
 	public String l;

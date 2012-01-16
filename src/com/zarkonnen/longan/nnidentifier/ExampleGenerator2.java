@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
 import java.awt.Color;
 import java.awt.Font;

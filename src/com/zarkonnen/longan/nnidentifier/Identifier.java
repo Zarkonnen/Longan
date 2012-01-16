@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
 import com.zarkonnen.longan.Metadata;
 import com.zarkonnen.longan.data.Column;
@@ -6,8 +6,7 @@ import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
-import com.zarkonnen.longan.opencl.CompiledOpenCLNetwork;
-import com.zarkonnen.longan.profilegen.network.Util;
+import com.zarkonnen.longan.nnidentifier.network.Util;
 import com.zarkonnen.longan.stage.LetterIdentifier;
 import java.io.UnsupportedEncodingException;
 import java.security.NoSuchAlgorithmException;
@@ -21,7 +20,7 @@ import java.util.Map;
 public class Identifier implements LetterIdentifier {
 	private final Config config;
 	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
-	static final double ALSO_RAN_PROMO =     0.0001;
+	static final double ALSO_RAN_PROMO     = 0.0001;
 	static final double BEST_ALT_PROMOTION = 0.002;
 	public static final Metadata.Key<Config.Identifier> IDENTIFIER_USED = Metadata.key("identifierUsed", Config.Identifier.class);
 	public static final Metadata.Key<Double> AVG_LETTER_SIZE = Metadata.key("avgLetterSize", Double.class);
@@ -185,14 +184,14 @@ public class Identifier implements LetterIdentifier {
 				if (openCLIdentifiers.containsKey(identifier)) {
 					cocl = openCLIdentifiers.get(identifier);
 				} else {
-					cocl = new CompiledOpenCLNetwork(identifier.network.nw);
+					cocl = new CompiledOpenCLNetwork(identifier.fastNetwork);
+					//CompiledOpenCLNetwork cocl2 = new CompiledOpenCLNetwork(identifier.network.nw);
 					try {
 						openCLIdentifiers.put(identifier, cocl);
 						cocl.init();
 						if (!openCLTested[0]) {
 							cocl.test();
 						}
-						
 					} catch (Exception e) {
 						System.err.println("Unable to use openCL. Switching to CPU.");
 						enableOpenCL[0] = false;
@@ -202,7 +201,13 @@ public class Identifier implements LetterIdentifier {
 					}
 				}
 			}
-			float[] output = cocl == null ? identifier.network.run(data) : cocl.run(data);
+			float[] output = cocl == null ? identifier.fastNetwork.run(data) : cocl.run(data);
+			/*FastLoadingNetwork fln = new FastLoadingNetwork().initFromNetwork(identifier.network.nw);
+			float[] o2 = fln.run(data);
+			for (int i = 0; i < output.length; i++) {
+				System.out.println(output[i] - o2[i]);
+			}
+			System.exit(0);*/
 			for (Config.LetterClass lc : identifier.classes) {
 				double score = score(output, lc.target);
 				if (score > bestScore) {
@@ -258,7 +263,8 @@ public class Identifier implements LetterIdentifier {
 					if (openCLDiscriminators.containsKey(nnd)) {
 						cocl = openCLDiscriminators.get(nnd);
 					} else {
-						cocl = new CompiledOpenCLNetwork(nnd.network.nw);
+						cocl = new CompiledOpenCLNetwork(nnd.fastNetwork);
+						//cocl = new CompiledOpenCLNetwork(nnd.network.nw);
 						try {
 							cocl.init();
 							if (!openCLTested[0]) {
@@ -274,7 +280,7 @@ public class Identifier implements LetterIdentifier {
 						}
 					}
 				}
-				float output = cocl == null ? nnd.network.run(inputs.get(letter))[0] : cocl.run(inputs.get(letter))[0];
+				float output = cocl == null ? nnd.fastNetwork.run(inputs.get(letter))[0] : cocl.run(inputs.get(letter))[0];
 				if (output > bestDiscScore) {
 					bestDiscScore = output;
 					newBestLetter = discriminator.alternative;

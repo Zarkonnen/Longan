@@ -1,8 +1,8 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
-import com.zarkonnen.longan.profilegen.network.Network;
-import com.zarkonnen.longan.profilegen.network.Weight;
-import com.zarkonnen.longan.profilegen.network.Layer;
+import com.zarkonnen.longan.nnidentifier.network.Network;
+import com.zarkonnen.longan.nnidentifier.network.Weight;
+import com.zarkonnen.longan.nnidentifier.network.Layer;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -122,19 +122,34 @@ public class NetworkIO {
 	}
 	
 	public static Config readDefaultArchive() throws ZipException, IOException, JSONException {
+		FastLoadingNetwork identifierTemplate = new FastLoadingNetwork();
+		identifierTemplate.loadShape(NetworkIO.class.getResourceAsStream("identifier.lns"));
+		FastLoadingNetwork discriminatorTemplate = new FastLoadingNetwork();
+		discriminatorTemplate.loadShape(NetworkIO.class.getResourceAsStream("discriminator.lns"));
+		
 		Config c = new Config(new JSONObject(new JSONTokener(new InputStreamReader(NetworkIO.class.getResourceAsStream("data/source.json"), "UTF-8"))));
 		HashSet<String> taken = new HashSet<String>();
 		for (Config.Identifier identifier : c.identifiers) {
-			identifier.network = new IdentifierNet();
 			String name = getName(identifier, taken);
+			/*
+			identifier.network = new IdentifierNet();
 			input(identifier.network.nw, NetworkIO.class.getResourceAsStream("data/" + name + ".lin"));
+			*/
+			identifier.fastNetwork = identifierTemplate.cloneWithSameShape();
+			identifier.fastNetwork.loadWeights(NetworkIO.class.getResourceAsStream("data/" + name + ".lfn"));
 			readRelativeSizeInfo(identifier, NetworkIO.class.getResourceAsStream("data/" + name + ".lls"));
 			readAspectRatioInfo(identifier, NetworkIO.class.getResourceAsStream("data/" + name + ".lla"));
 		}
 		for (Config.Discriminator discriminator : c.discriminators) {
 			if (discriminator instanceof Config.NNDiscriminator) {
+				String name = getName(discriminator, taken);
+				Config.NNDiscriminator d = (Config.NNDiscriminator) discriminator;
+				d.fastNetwork = discriminatorTemplate.cloneWithSameShape();
+				d.fastNetwork.loadWeights(NetworkIO.class.getResourceAsStream("data/" + name + ".ldf")); 
+				/*
 				((Config.NNDiscriminator) discriminator).network = new DiscriminatorNet();
-				input(((Config.NNDiscriminator) discriminator).network.nw, NetworkIO.class.getResourceAsStream("data/" + getName(discriminator, taken) + ".ldn"));
+				input(((Config.NNDiscriminator) discriminator).network.nw, NetworkIO.class.getResourceAsStream("data/" + name + ".ldn"));
+				*/
 			}
 			if (discriminator instanceof Config.AspectRatioDiscriminator) {
 				readAspectRatioInfo((Config.AspectRatioDiscriminator) discriminator, NetworkIO.class.getResourceAsStream("data/" + getName(discriminator, taken) + ".lda"));

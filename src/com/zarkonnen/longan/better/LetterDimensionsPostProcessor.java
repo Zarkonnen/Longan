@@ -6,7 +6,7 @@ import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
-import com.zarkonnen.longan.profilegen.Identifier;
+import com.zarkonnen.longan.nnidentifier.Identifier;
 import com.zarkonnen.longan.stage.PostProcessor;
 import java.util.HashMap;
 import java.util.Map;

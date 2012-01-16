@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +38,7 @@ public class Config {
 		public final FontType font;
 		public ArrayList<LetterClass> classes = new ArrayList<LetterClass>();
 		public IdentifierNet network;
+		public FastLoadingNetwork fastNetwork;
 		public HashMap<String, Double> expectedRelativeSizes;
 		public HashMap<String, Double> expectedAspectRatios;
 		public String sampleSentence = DEFAULT_SAMPLE_SENTENCE;
@@ -144,6 +145,7 @@ public class Config {
 	
 	public static class NNDiscriminator extends Discriminator {
 		public DiscriminatorNet network;
+		public FastLoadingNetwork fastNetwork;
 
 		public NNDiscriminator(FontType font, String triggerLetter, String alternateLetter) {
 			super(font, triggerLetter, alternateLetter);

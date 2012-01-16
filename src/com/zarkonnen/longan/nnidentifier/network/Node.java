@@ -1,6 +1,6 @@
-package com.zarkonnen.longan.profilegen.network;
+package com.zarkonnen.longan.nnidentifier.network;
 
-import static com.zarkonnen.longan.profilegen.network.Util.*;
+import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 import java.util.ArrayList;
 
 public class Node {

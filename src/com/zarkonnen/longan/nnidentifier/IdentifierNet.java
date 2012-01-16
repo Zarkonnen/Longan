@@ -1,20 +1,20 @@
-package com.zarkonnen.longan.profilegen;
+package com.zarkonnen.longan.nnidentifier;
 
-import com.zarkonnen.longan.profilegen.network.Connection;
-import com.zarkonnen.longan.profilegen.network.Network;
-import com.zarkonnen.longan.profilegen.network.Weight;
-import com.zarkonnen.longan.profilegen.network.Layer;
-import com.zarkonnen.longan.profilegen.network.Node;
+import com.zarkonnen.longan.nnidentifier.network.Connection;
+import com.zarkonnen.longan.nnidentifier.network.Network;
+import com.zarkonnen.longan.nnidentifier.network.Weight;
+import com.zarkonnen.longan.nnidentifier.network.Layer;
+import com.zarkonnen.longan.nnidentifier.network.Node;
 import java.util.ArrayList;
 import java.util.Random;
 
-import static com.zarkonnen.longan.profilegen.network.Util.*;
+import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 
-public class DiscriminatorNet {
-	Network nw;
+public class IdentifierNet {
+	public Network nw;
 	Random r = new Random();
 	
-	public DiscriminatorNet() {
+	public IdentifierNet() {
 		Layer input = new Layer("Input");
 		for (int y = 0; y < 28; y++) { for (int x = 0; x < 28; x++) {
 			input.nodes.add(new Node("input " + y + "/" + x));
@@ -52,7 +52,9 @@ public class DiscriminatorNet {
 		}
 		
 		Layer output = new Layer("Output");
-		output.nodes.add(new Node("Output"));
+		for (int i = 0; i < ProfileGen.OUTPUT_SIZE; i++) {
+			output.nodes.add(new Node("Output " + i));
+		}
 		
 		// Connect input to h1
 		for (int m = 0; m < 6; m++) {

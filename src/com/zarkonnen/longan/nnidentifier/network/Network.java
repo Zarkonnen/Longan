@@ -1,4 +1,4 @@
-package com.zarkonnen.longan.profilegen.network;
+package com.zarkonnen.longan.nnidentifier.network;
 
 import java.util.ArrayList;
 
