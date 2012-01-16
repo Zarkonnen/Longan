@@ -1,4 +1,4 @@
 {
     "triggerIsAboveBoundary": false,
-    "boundarySize": 1.2392409638278536
+    "boundarySize": 1.229998296048643
 }

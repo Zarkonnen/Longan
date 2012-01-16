@@ -14,11 +14,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -56,6 +59,40 @@ public class NetworkIO {
 		os.write(o.toString(4).getBytes("UTF-8"));
 	}
 	
+	static void readRelativeSizeInfo(Config.Identifier id, InputStream is) throws JSONException {
+		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is)));
+		id.expectedRelativeSizes = new HashMap<String, Double>();
+		JSONArray keys = o.names();
+		for (int i = 0; i < keys.length(); i++) {
+			id.expectedRelativeSizes.put(keys.getString(i), o.getDouble(keys.getString(i)));
+		}
+	}
+	
+	static void writeRelativeSizeInfo(Config.Identifier id, OutputStream os) throws JSONException, UnsupportedEncodingException, IOException {
+		JSONObject o = new JSONObject();
+		for (Map.Entry<String, Double> e : id.expectedRelativeSizes.entrySet()) {
+			o.put(e.getKey(), e.getValue());
+		}
+		os.write(o.toString(4).getBytes("UTF-8"));
+	}
+	
+	static void readAspectRatioInfo(Config.Identifier id, InputStream is) throws JSONException {
+		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is)));
+		id.expectedAspectRatios = new HashMap<String, Double>();
+		JSONArray keys = o.names();
+		for (int i = 0; i < keys.length(); i++) {
+			id.expectedAspectRatios.put(keys.getString(i), o.getDouble(keys.getString(i)));
+		}
+	}
+	
+	static void writeAspectRatioInfo(Config.Identifier id, OutputStream os) throws JSONException, UnsupportedEncodingException, IOException {
+		JSONObject o = new JSONObject();
+		for (Map.Entry<String, Double> e : id.expectedAspectRatios.entrySet()) {
+			o.put(e.getKey(), e.getValue());
+		}
+		os.write(o.toString(4).getBytes("UTF-8"));
+	}
+	
 	static void readAspectRatioInfo(Config.AspectRatioDiscriminator d, InputStream is) throws JSONException {
 		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is)));
 		d.boundaryRatio = o.getDouble("boundaryRatio");
@@ -89,7 +126,10 @@ public class NetworkIO {
 		HashSet<String> taken = new HashSet<String>();
 		for (Config.Identifier identifier : c.identifiers) {
 			identifier.network = new IdentifierNet();
-			input(identifier.network.nw, NetworkIO.class.getResourceAsStream("data/" + getName(identifier, taken) + ".lin"));
+			String name = getName(identifier, taken);
+			input(identifier.network.nw, NetworkIO.class.getResourceAsStream("data/" + name + ".lin"));
+			readRelativeSizeInfo(identifier, NetworkIO.class.getResourceAsStream("data/" + name + ".lls"));
+			readAspectRatioInfo(identifier, NetworkIO.class.getResourceAsStream("data/" + name + ".lla"));
 		}
 		for (Config.Discriminator discriminator : c.discriminators) {
 			if (discriminator instanceof Config.NNDiscriminator) {
@@ -129,6 +169,10 @@ public class NetworkIO {
 					input(identifier.network.nw,
 							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lin")));
 					c.identifiers.add(identifier);
+					readRelativeSizeInfo(identifier,
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lls")));
+					readAspectRatioInfo(identifier,
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lla")));
 				}
 				if (json.getString("type").equals("discriminator")) {
 					Config.NNDiscriminator discriminator = new Config.NNDiscriminator(json);
@@ -172,6 +216,10 @@ public class NetworkIO {
 			zos.write(identifier.toJSON().toString(4).getBytes("UTF-8"));
 			zos.putNextEntry(new ZipEntry(name + ".lin"));
 			NetworkIO.output(identifier.network.nw, zos);
+			zos.putNextEntry(new ZipEntry(name + ".lls"));
+			writeRelativeSizeInfo(identifier, zos);
+			zos.putNextEntry(new ZipEntry(name + ".lla"));
+			writeAspectRatioInfo(identifier, zos);
 		}
 		
 		for (Config.Discriminator discriminator : config.discriminators) {

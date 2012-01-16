@@ -1,0 +1,5 @@
+{
+    "enabled": true,
+    "triggerIsAboveBoundary": true,
+    "numberOfPartsBoundary": 1
+}

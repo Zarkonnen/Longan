@@ -22,6 +22,7 @@ import com.zarkonnen.longan.data.Column;
 import com.zarkonnen.longan.data.Line;
 import com.zarkonnen.longan.data.Result;
 import com.zarkonnen.longan.data.Word;
+import com.zarkonnen.longan.profilegen.Identifier;
 import com.zarkonnen.longan.stage.PostProcessor;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
@@ -38,8 +39,10 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 	static final double RECURSE_COST        = 0.03;
 	static final double SAW_WIDTH_TOLERANCE = 1.2;
 	static final int    MAX_RECURSION       = 3;
+	static final double MIN_IMPLAUSIBILITY_SCORE_DELTA = 0.02;
+	static final double MIN_IMPROVEMENT     = 0.14;
 	
-	static final double MAX_SZ_DEV = 1.8;
+	static final double MAX_SZ_DEV = 1.6;
 	
 	int q = 0;
 	
@@ -62,13 +65,15 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 			}
 		}
 		
-		return output.isEmpty() || worstScoreIn(output) - RECURSE_COST < bestPlausibleScore(srcLetter) ? null : output;
+		return output.isEmpty() || worstScoreIn(output, c) - RECURSE_COST < bestPlausibleScore(srcLetter, c) ? null : output;
 	}
 	
-	double bestPlausibleScore(Letter l) {
+	double bestPlausibleScore(Letter l, Column c) {
 		double score = 0.0;
-		HashMap<String, Double> expectedSizes = new HashMap<String, Double>(); // qqDPS Source this!
-		expectedSizes.put("-", 0.4);
+		HashMap<String, Double> expectedSizes = 
+				c.metadata.has(Identifier.IDENTIFIER_USED)
+				? c.metadata.get(Identifier.IDENTIFIER_USED).expectedRelativeSizes
+				: new HashMap<String, Double>();
 		for (Map.Entry<String, Double> e : l.possibleLetters.entrySet()) {
 			if (expectedSizes.containsKey(e.getKey()) &&
 				l.relativeSize > expectedSizes.get(e.getKey()) * MAX_SZ_DEV)
@@ -80,10 +85,16 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 		return score;
 	}
 	
-	double worstScoreIn(ArrayList<Letter> list) {
+	double worstScoreIn(ArrayList<Letter> list, Column c) {
 		double ws = 1;
-		for (Letter l : list) { ws = Math.min(ws, bestPlausibleScore(l)); }
+		for (Letter l : list) { ws = Math.min(ws, bestPlausibleScore(l, c)); }
 		return ws;
+	}
+	
+	double avgPlausibleScoreIn(ArrayList<Letter> list, Column c) {
+		double acc = 0;
+		for (Letter l : list) {  acc += bestPlausibleScore(l, c); }
+		return acc / list.size();
 	}
 	
 	public void process(Result result, Longan longan) {
@@ -92,10 +103,12 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 				for (Word word : line.words) {
 					lp: for (int i = 0; i < word.letters.size(); i++) {
 						Letter l = word.letters.get(i);
-						double sc = bestPlausibleScore(l);
-						if (sc < LOW_SCORE_BOUNDARY) {
+						double score = l.bestScore();
+						double plausibleScore = bestPlausibleScore(l, c);
+						boolean implausibleLetter = plausibleScore + MIN_IMPLAUSIBILITY_SCORE_DELTA < score;
+						if (plausibleScore < LOW_SCORE_BOUNDARY) {
 							ArrayList<Letter> newLs = split(l, l, word, line, c, result, longan, 0);
-							if (newLs != null) {
+							if (newLs != null && (implausibleLetter || avgPlausibleScoreIn(newLs, c) > plausibleScore + MIN_IMPROVEMENT)) {
 								word.letters.remove(i);
 								word.letters.addAll(i, newLs);
 								i += newLs.size() - 1;

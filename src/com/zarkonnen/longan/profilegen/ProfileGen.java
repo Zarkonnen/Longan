@@ -401,6 +401,8 @@ public class ProfileGen {
 				if (pass % 10 == 0) { System.out.println(pass + "/" + iters); }
 			}
 			identifier.network = network;
+			setExpectedRelativeSizes(identifier);
+			setAspectRatios(identifier);
 		}
 		
 		for (Config.Discriminator discriminator : config.discriminators) {
@@ -434,20 +436,45 @@ public class ProfileGen {
 		}
 	}
 	
+	static double getAspectRatio(Config.FontType font, String letter) {
+		Rectangle rect = getLetterRect(font, letter);
+		return (rect.getWidth() + 10) / (rect.getHeight() + 10);
+	}
+	
 	static void setAspectRatioBoundary(Config.AspectRatioDiscriminator d) {
-		BufferedImage img = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g = img.createGraphics();
-		g.setFont(new Font(d.font.font, d.font.italic ? Font.ITALIC : Font.PLAIN, 100));
-		FontMetrics fm = g.getFontMetrics();
-		Rectangle2D triggerRect = fm.getStringBounds(d.trigger, g);
-		Rectangle2D altRect = fm.getStringBounds(d.alternative, g);
-		double triggerRatio = (triggerRect.getWidth() + 10) / (triggerRect.getHeight() + 10);
-		double altRatio = (altRect.getWidth() + 10) / (altRect.getHeight() + 10);
+		double triggerRatio = getAspectRatio(d.font, d.trigger);
+		double altRatio = getAspectRatio(d.font, d.alternative);
 		d.boundaryRatio = triggerRatio / 2 + altRatio / 2;
 		d.triggerIsAboveBoundary = triggerRatio > altRatio;
 	}
 	
-	static double getSize(Config.FontType ft, String l) {
+	static void setExpectedRelativeSizes(Config.Identifier id) {
+		id.expectedRelativeSizes = new HashMap<String, Double>();
+		double sizeAcc = 0;
+		for (int i = 0; i < id.sampleSentence.length(); i++) {
+			double sz = getSize(id.font, id.sampleSentence.substring(i, i + 1));
+			if (sz < 99) {
+				sizeAcc += sz;
+			}
+		}
+		double avgSize = sizeAcc / id.sampleSentence.length();
+		for (Config.LetterClass lc : id.classes) {
+			for (String l : lc.members) {
+				id.expectedRelativeSizes.put(l, getSize(id.font, l) / avgSize);
+			}
+		}
+	}
+	
+	static void setAspectRatios(Config.Identifier id) {
+		id.expectedAspectRatios = new HashMap<String, Double>();
+		for (Config.LetterClass lc : id.classes) {
+			for (String l : lc.members) {
+				id.expectedAspectRatios.put(l, getAspectRatio(id.font, l));
+			}
+		}
+	}
+	
+	static Rectangle getLetterRect(Config.FontType ft, String l) {
 		BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
 		g.setFont(new Font(ft.font, ft.italic ? Font.ITALIC : Font.PLAIN, 50));
@@ -456,11 +483,26 @@ public class ProfileGen {
 		g.setColor(Color.BLACK);
 		g.drawString(l, 50, 50);
 		ArrayList<Letter> ls = new BetterLetterFinder().find(img, new HashMap<String, String>());
-		Rectangle triggerR = ls.get(0);
+		Rectangle rect = ls.get(0);
 		for (int i = 1; i < ls.size(); i++) {
-			triggerR.add(ls.get(i));
+			rect.add(ls.get(i));
 		}
-		return Math.sqrt(triggerR.width * triggerR.height);
+		if (rect.width == 100 && rect.height == 100) {
+			HashMap<String, String> meta = new HashMap<String, String>();
+			meta.put("blackWhiteBoundary", "250");
+			ls = new BetterLetterFinder().find(img, meta);
+			if (ls.isEmpty()) { return rect; }
+			rect = ls.get(0);
+			for (int i = 1; i < ls.size(); i++) {
+				rect.add(ls.get(i));
+			}
+		}
+		return rect;
+	}
+	
+	static double getSize(Config.FontType ft, String l) {
+		Rectangle rect = getLetterRect(ft, l);
+		return Math.sqrt(rect.width * rect.height);
 	}
 	
 	static void setRelativeSizeBoundary(Config.RelativeSizeDiscriminator d) {

@@ -2,6 +2,7 @@ package com.zarkonnen.longan.profilegen;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -33,9 +34,13 @@ public class Config {
 	}
 	
 	public static class Identifier {
+		static String DEFAULT_SAMPLE_SENTENCE = "The quick brown fox jumped over the lazy dog.";
 		public final FontType font;
 		public ArrayList<LetterClass> classes = new ArrayList<LetterClass>();
 		public IdentifierNet network;
+		public HashMap<String, Double> expectedRelativeSizes;
+		public HashMap<String, Double> expectedAspectRatios;
+		public String sampleSentence = DEFAULT_SAMPLE_SENTENCE;
 
 		public Identifier(FontType font) {
 			this.font = font;
@@ -49,6 +54,7 @@ public class Config {
 				throw new JSONException("Unknown config file version.");
 			}
 			font = new FontType(json.getString("font"), json.optBoolean("italic", false));
+			sampleSentence = json.optString("sampleSentence", DEFAULT_SAMPLE_SENTENCE);
 			JSONArray classesA = json.getJSONArray("classes");
 			for (int i = 0; i < classesA.length(); i++) {
 				LetterClass lc = new LetterClass();
@@ -66,6 +72,7 @@ public class Config {
 			json.put("version", "1.0");
 			json.put("font", font.font);
 			json.put("italic", font.italic);
+			json.put("sampleSentence", sampleSentence);
 			JSONArray classesA = new JSONArray();
 			json.put("classes", classesA);
 			for (LetterClass lc : classes) {

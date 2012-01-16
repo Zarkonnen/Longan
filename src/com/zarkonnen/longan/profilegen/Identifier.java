@@ -23,8 +23,8 @@ public class Identifier implements LetterIdentifier {
 	static final int REFERENCE_INTENSITY_BOUNDARY = 165;
 	static final double ALSO_RAN_PROMO =     0.0001;
 	static final double BEST_ALT_PROMOTION = 0.002;
-	static final Metadata.Key<Config.Identifier> IDENTIFIER_USED = Metadata.key("identifierUsed", Config.Identifier.class);
-	static final Metadata.Key<Double> AVG_LETTER_SIZE = Metadata.key("avgLetterSize", Double.class);
+	public static final Metadata.Key<Config.Identifier> IDENTIFIER_USED = Metadata.key("identifierUsed", Config.Identifier.class);
+	public static final Metadata.Key<Double> AVG_LETTER_SIZE = Metadata.key("avgLetterSize", Double.class);
 	
 	HashMap<Config.Identifier, CompiledOpenCLNetwork> openCLIdentifiers = new HashMap<Config.Identifier, CompiledOpenCLNetwork>();
 	HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork> openCLDiscriminators = new HashMap<Config.NNDiscriminator, CompiledOpenCLNetwork>();

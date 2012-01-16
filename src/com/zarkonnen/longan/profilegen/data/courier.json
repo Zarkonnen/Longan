@@ -73,6 +73,7 @@
         "9"
     ],
     "font": "Courier",
+    "sampleSentence": "The quick brown fox jumped over the lazy dog.",
     "italic": false,
     "type": "identifier",
     "version": "1.0"

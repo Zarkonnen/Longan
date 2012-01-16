@@ -75,6 +75,7 @@
                 "9"
             ],
             "font": "Courier",
+            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
             "italic": false,
             "type": "identifier",
             "version": "1.0"
@@ -156,6 +157,7 @@
                 "9"
             ],
             "font": "Andale Mono",
+            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
             "italic": false,
             "type": "identifier",
             "version": "1.0"
@@ -225,6 +227,14 @@
             "version": "1.0"
         },
         {
+            "trigger": "t",
+            "font": "Andale Mono",
+            "alternative": "l",
+            "italic": false,
+            "type": "discriminator",
+            "version": "1.0"
+        },
+        {
             "trigger": "l",
             "font": "Andale Mono",
             "alternative": "i",
@@ -249,6 +259,14 @@
             "version": "1.0"
         },
         {
+            "trigger": "b",
+            "font": "Andale Mono",
+            "alternative": "h",
+            "italic": false,
+            "type": "discriminator",
+            "version": "1.0"
+        },
+        {
             "trigger": "i",
             "font": "Andale Mono",
             "alternative": "=",
@@ -260,6 +278,30 @@
             "trigger": "l",
             "font": "Andale Mono",
             "alternative": "i",
+            "italic": false,
+            "type": "numberOfPartsDiscriminator",
+            "version": "1.0"
+        },
+        {
+            "trigger": "l",
+            "font": "Courier",
+            "alternative": "i",
+            "italic": false,
+            "type": "numberOfPartsDiscriminator",
+            "version": "1.0"
+        },
+        {
+            "trigger": "i",
+            "font": "Andale Mono",
+            "alternative": "l",
+            "italic": false,
+            "type": "numberOfPartsDiscriminator",
+            "version": "1.0"
+        },
+        {
+            "trigger": "i",
+            "font": "Courier",
+            "alternative": "l",
             "italic": false,
             "type": "numberOfPartsDiscriminator",
             "version": "1.0"

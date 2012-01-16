@@ -5,6 +5,10 @@ import java.util.HashMap;
 public class Metadata {
 	private final HashMap<Key, Object> data = new HashMap<Key, Object>();
 	
+	public <T> boolean has(Key<T> key) {
+		return data.containsKey(key);
+	}
+	
 	public <T> T get(Key<T> key, T fallback) {
 		return (T) (data.containsKey(key) ? data.get(key) : fallback);
 	}
