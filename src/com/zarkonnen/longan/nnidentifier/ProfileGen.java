@@ -2,7 +2,6 @@ package com.zarkonnen.longan.nnidentifier;
 
 import java.awt.Rectangle;
 import com.zarkonnen.longan.data.Letter;
-import java.awt.geom.Rectangle2D;
 import java.awt.Graphics2D;
 import java.util.List;
 import com.zarkonnen.fruitbat.atrio.ATRReader;
@@ -11,7 +10,6 @@ import com.zarkonnen.longan.better.BetterLetterFinder;
 import com.zarkonnen.longan.nnidentifier.network.Util;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.FontMetrics;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import org.apache.commons.cli.HelpFormatter;
@@ -56,24 +54,14 @@ public class ProfileGen {
 		Option generateO = OptionBuilder.withDescription("Generate set of neural network weights. Takes two file arguments: the source JSON file and the target zip.").withLongOpt("generate").create("g");
 		Option testO = OptionBuilder.withDescription("Test set of neural networks against images. Takes two file arguments: the zip of weights and a folder of images.").withLongOpt("test").create("t");
 		Option itersO = OptionBuilder.withDescription("Number of iterations to train the network(s) for.").withLongOpt("iters").hasArg().withArgName("iterations").create("i");
-		Option openCLO = OptionBuilder.withDescription("enables use of the graphics card to "
-				+ "support the OCR system. Defaults to true.").withLongOpt("enable-opencl").
-				hasArg().withArgName("enabled").create();
 		options.addOption(helpO);
 		options.addOption(versionO);
 		options.addOption(generateO);
 		options.addOption(testO);
 		options.addOption(itersO);
-		options.addOption(openCLO);
 		CommandLineParser clp = new GnuParser();
 		try {
-			boolean enableOpenCL = true;
 			CommandLine line = clp.parse(options, args);
-			if (line.hasOption("enable-opencl")) {
-				enableOpenCL =
-						line.getOptionValue("enable-opencl").toLowerCase().equals("true") ||
-						line.getOptionValue("enable-opencl").equals("1");
-			}
 			if (line.hasOption("h")) {
 				new HelpFormatter().printHelp(INVOCATION, options);
 				System.exit(0);
@@ -92,7 +80,7 @@ public class ProfileGen {
 			if (line.hasOption("t")) {
 				long t = System.currentTimeMillis();
 				Config config = NetworkIO.readArchive(new File((String) line.getArgList().get(0)));
-				testNetworks(config, new File((String) line.getArgList().get(1)), enableOpenCL);
+				testNetworks(config, new File((String) line.getArgList().get(1)));
 				System.out.println((System.currentTimeMillis() - t) + " ms");
 				System.exit(0);
 			}
@@ -101,23 +89,10 @@ public class ProfileGen {
 		}
 	}
 	
-	public static void testNetworks(Config config, File imageFolder, boolean enableOpenCL) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
+	public static void testNetworks(Config config, File imageFolder) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
 		generateTargets(config);
 		for (Config.Identifier identifier : config.identifiers) {
-			CompiledOpenCLNetwork cocl = null;
-			if (enableOpenCL) {
-				cocl = new CompiledOpenCLNetwork(identifier.network.nw);
-			}
 			try {
-				if (enableOpenCL) {
-					try {
-						cocl.init();
-						cocl.test();
-					} catch (Exception e) {
-						System.err.println("Unable to use openCL. Switching to CPU.");
-						enableOpenCL = false;
-					}
-				}
 				System.out.println();
 				System.out.println("Testing " + identifier);
 				int misses = 0;
@@ -145,7 +120,7 @@ public class ProfileGen {
 						for (File f : letterFolder.listFiles()) {
 							if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
 								float[] input = Util.getInputForNN(ImageIO.read(f));
-								float[] output = enableOpenCL ? cocl.run(input) : identifier.network.run(input);
+								float[] output = identifier.network.run(input);
 								
 								Config.LetterClass bestLC = null;
 								double bestScore = 0;
@@ -169,34 +144,10 @@ public class ProfileGen {
 				System.out.println(100.0 * (tests - misses) / tests + "%");
 			} catch (Exception e) {
 				e.printStackTrace();
-			} finally {
-				if (cocl != null) {
-					try {
-						cocl.close();
-					} catch (Exception e) {
-						if (enableOpenCL) {
-							e.printStackTrace();
-						}
-					}
-				}
 			}
 		}
 		for (Config.Discriminator discriminator : config.discriminators) {
-			CompiledOpenCLNetwork cocl = null;
-			if (enableOpenCL && discriminator instanceof Config.NNDiscriminator) {
-				cocl = new CompiledOpenCLNetwork(((Config.NNDiscriminator) discriminator).network.nw);
-			}
 			try {
-				if (enableOpenCL) {
-					try {
-						cocl.init();
-						cocl.test();
-					} catch (Exception e) {
-						System.out.println("Unable to use openCL. Switching to CPU.");
-						enableOpenCL = false;
-					}
-				}
-			
 				System.out.println();
 				System.out.println("Testing " + discriminator);
 				int misses = 0;
@@ -353,16 +304,8 @@ public class ProfileGen {
 				}
 				System.out.println((tests - misses) + "/" + tests);
 				System.out.println(100.0 * (tests - misses) / tests + "%");
-			} finally {
-				if (cocl != null) {
-					try {
-						cocl.close();
-					} catch (Exception e) {
-						if (enableOpenCL) {
-							e.printStackTrace();
-						}
-					}
-				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}

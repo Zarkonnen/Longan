@@ -140,7 +140,7 @@ public class FastLoadingNetwork {
 			// Analyse the layer.
 			numNodes = layer.nodes.size();
 			numWeights = prevLayer.weights.size();
-			hasBias = CompiledOpenCLNetwork.hasBias(layer);
+			hasBias = hasBias(layer);
 			connectionOffsets = new int[numNodes];
 			numConnections    = new int[numNodes];
 			totalNumConnections = 0;
@@ -197,5 +197,10 @@ public class FastLoadingNetwork {
 			l2.nextLayer = new float[nextLayer.length];
 			return l2;
 		}
+	}
+	
+	// NB: Horrible.
+	public static boolean hasBias(Layer layer) {
+		return layer.nodes.get(0).incoming.get(layer.nodes.get(0).incoming.size() - 1).input.name.toLowerCase().contains("bias");
 	}
 }
