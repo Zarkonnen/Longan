@@ -38,7 +38,7 @@ public class FastLoadingNetwork {
 			l.weightConnections = new int[l.totalNumConnections];
 			l.weights           = new float[l.numWeights];
 			l.biases            = new float[l.numNodes];
-			l.nextLayer         = new float[l.numNodes];
+			l.output         = new float[l.numNodes];
 			for (int i = 0; i < l.connectionOffsets.length; i++) {
 				l.connectionOffsets[i] = ois.readInt();
 			}
@@ -116,7 +116,7 @@ public class FastLoadingNetwork {
 	public float[] run(float[] input) {
 		for (FastLayer l : layers) {
 			l.run(input);
-			input = l.nextLayer;
+			input = l.output;
 		}
 		return input;
 	}
@@ -132,7 +132,7 @@ public class FastLoadingNetwork {
 		int[]   weightConnections;
 		float[] weights;
 		float[] biases;
-		float[] nextLayer;
+		float[] output;
 		
 		public FastLayer() {}
 		
@@ -168,7 +168,7 @@ public class FastLoadingNetwork {
 				}
 			}
 			
-			nextLayer = new float[numNodes];
+			output = new float[numNodes];
 		}
 				
 		public void run(float[] prevLayer) {
@@ -178,7 +178,7 @@ public class FastLoadingNetwork {
 					x += weights[weightConnections[connectionOffsets[n] + i]]
 							* prevLayer[connections[connectionOffsets[n] + i]];
 				}
-				nextLayer[n] = (float) Math.tanh(x);
+				output[n] = (float) Math.tanh(x);
 			}
 		}
 		
@@ -194,7 +194,7 @@ public class FastLoadingNetwork {
 			l2.weightConnections = weightConnections;
 			l2.weights = new float[weights.length];
 			l2.biases  = new float[biases.length];
-			l2.nextLayer = new float[nextLayer.length];
+			l2.output  = new float[output.length];
 			return l2;
 		}
 	}

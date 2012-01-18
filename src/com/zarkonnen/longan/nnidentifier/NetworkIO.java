@@ -27,6 +27,18 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 public class NetworkIO {
+	static boolean networksLoaded = false;
+	static FastLoadingNetwork identifierTemplate = new FastLoadingNetwork();
+	static FastLoadingNetwork discriminatorTemplate = new FastLoadingNetwork();
+		
+	static void loadNetworkShapes() throws IOException {
+		if (!networksLoaded) {
+			identifierTemplate.loadShape(NetworkIO.class.getResourceAsStream("identifier.lns"));
+			discriminatorTemplate.loadShape(NetworkIO.class.getResourceAsStream("discriminator.lns"));
+			networksLoaded = true;
+		}
+	}
+	
 	public static void output(Network nw, OutputStream os) throws IOException {
 		ObjectOutputStream oos = new ObjectOutputStream(os);
 		for (Layer l : nw.layers) {
@@ -122,11 +134,7 @@ public class NetworkIO {
 	}
 	
 	public static Config readDefaultArchive() throws ZipException, IOException, JSONException {
-		FastLoadingNetwork identifierTemplate = new FastLoadingNetwork();
-		identifierTemplate.loadShape(NetworkIO.class.getResourceAsStream("identifier.lns"));
-		FastLoadingNetwork discriminatorTemplate = new FastLoadingNetwork();
-		discriminatorTemplate.loadShape(NetworkIO.class.getResourceAsStream("discriminator.lns"));
-		
+		loadNetworkShapes();
 		Config c = new Config(new JSONObject(new JSONTokener(new InputStreamReader(NetworkIO.class.getResourceAsStream("data/source.json"), "UTF-8"))));
 		HashSet<String> taken = new HashSet<String>();
 		for (Config.Identifier identifier : c.identifiers) {
@@ -166,6 +174,7 @@ public class NetworkIO {
 	}
 	
 	public static Config readArchive(File archiveF) throws ZipException, IOException, JSONException {
+		loadNetworkShapes();
 		ZipFile zf = new ZipFile(archiveF);
 		Config c = new Config();
 		Enumeration<? extends ZipEntry> zfi = zf.entries();
@@ -180,9 +189,12 @@ public class NetworkIO {
 				}
 				if (json.getString("type").equals("identifier")) {
 					Config.Identifier identifier = new Config.Identifier(json);
-					identifier.network = new IdentifierNet();
+					/*identifier.network = new IdentifierNet();
 					input(identifier.network.nw,
-							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lin")));
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lin")));*/
+					identifier.fastNetwork = identifierTemplate.cloneWithSameShape();
+					identifier.fastNetwork.loadWeights(
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lfn")));
 					c.identifiers.add(identifier);
 					readRelativeSizeInfo(identifier,
 							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".lls")));
@@ -191,9 +203,12 @@ public class NetworkIO {
 				}
 				if (json.getString("type").equals("discriminator")) {
 					Config.NNDiscriminator discriminator = new Config.NNDiscriminator(json);
-					discriminator.network = new DiscriminatorNet();
+					/*discriminator.network = new DiscriminatorNet();
 					input(discriminator.network.nw,
-							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".ldn")));
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".ldn")));*/
+					discriminator.fastNetwork = discriminatorTemplate.cloneWithSameShape();
+					discriminator.fastNetwork.loadWeights(
+							zf.getInputStream(new ZipEntry(ze.getName().substring(0, ze.getName().length() - 5) + ".ldf")));
 					c.discriminators.add(discriminator);
 				}
 				if (json.getString("type").equals("aspectRatioDiscriminator")) {
@@ -229,8 +244,10 @@ public class NetworkIO {
 			String name = getName(identifier, taken);
 			zos.putNextEntry(new ZipEntry(name + ".json"));
 			zos.write(identifier.toJSON().toString(4).getBytes("UTF-8"));
-			zos.putNextEntry(new ZipEntry(name + ".lin"));
-			NetworkIO.output(identifier.network.nw, zos);
+			zos.putNextEntry(new ZipEntry(name + ".lfn"));
+			new FastLoadingNetwork().initFromNetwork(identifier.network.nw).saveWeights(zos);
+			//zos.putNextEntry(new ZipEntry(name + ".lin"));
+			//NetworkIO.output(identifier.network.nw, zos);
 			zos.putNextEntry(new ZipEntry(name + ".lls"));
 			writeRelativeSizeInfo(identifier, zos);
 			zos.putNextEntry(new ZipEntry(name + ".lla"));
@@ -242,8 +259,10 @@ public class NetworkIO {
 			zos.putNextEntry(new ZipEntry(name + ".json"));
 			zos.write(discriminator.toJSON().toString(4).getBytes("UTF-8"));
 			if (discriminator instanceof Config.NNDiscriminator) {
-				zos.putNextEntry(new ZipEntry(name + ".ldn"));
-				NetworkIO.output(((Config.NNDiscriminator) discriminator).network.nw, zos);
+				//zos.putNextEntry(new ZipEntry(name + ".ldn"));
+				//NetworkIO.output(((Config.NNDiscriminator) discriminator).network.nw, zos);
+				zos.putNextEntry(new ZipEntry(name + ".ldf"));
+				new FastLoadingNetwork().initFromNetwork(((Config.NNDiscriminator) discriminator).network.nw).saveWeights(zos);
 			}
 			if (discriminator instanceof Config.AspectRatioDiscriminator) {
 				zos.putNextEntry(new ZipEntry(name + ".lda"));

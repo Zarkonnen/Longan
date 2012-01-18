@@ -328,7 +328,7 @@ public class ProfileGen {
 		Random r = new Random();
 		for (Config.Identifier identifier : config.identifiers) {
 			System.out.println("Training network for " + identifier);
-			IdentifierNet network = new IdentifierNet();
+			IdentifierNet in = new IdentifierNet();
 			ArrayList<Config.LetterClass> classes = new ArrayList<Config.LetterClass>(identifier.classes);
 			for (int pass = 0; pass < iters; pass++) {
 				Collections.shuffle(classes);
@@ -338,11 +338,11 @@ public class ProfileGen {
 							exL,
 							getInputForNN(ExampleGenerator2.makeLetterImage(exL, identifier.font)),
 							lc.target);
-					network.train(ex, 0.002f, 0.0005f);
+					in.train(ex, 0.002f, 0.0005f);
 				}
 				if (pass % 10 == 0) { System.out.println(pass + "/" + iters); }
 			}
-			identifier.network = network;
+			identifier.network = in;
 			setExpectedRelativeSizes(identifier);
 			setAspectRatios(identifier);
 		}
@@ -350,7 +350,7 @@ public class ProfileGen {
 		for (Config.Discriminator discriminator : config.discriminators) {
 			if (discriminator instanceof Config.NNDiscriminator) {
 				System.out.println("Training network for " + discriminator);
-				DiscriminatorNet network = new DiscriminatorNet();
+				DiscriminatorNet nw = new DiscriminatorNet();
 				for (int pass = 0; pass < iters * 20; pass++) {
 					boolean alternative = r.nextBoolean();
 					String exL = alternative ? discriminator.alternative : discriminator.trigger;
@@ -358,10 +358,10 @@ public class ProfileGen {
 							exL,
 							getInputForNN(ExampleGenerator2.makeLetterImage(exL, discriminator.font)),
 							new float[] { alternative ? 1.0f : 0.0f });
-					network.train(ex, 0.002f, 0.0005f);
+					nw.train(ex, 0.002f, 0.0005f);
 					if (pass % 100 == 0) { System.out.println(pass / 20 + "/" + iters); }
 				}
-				((Config.NNDiscriminator) discriminator).network = network;
+				((Config.NNDiscriminator) discriminator).network = nw;
 			}
 			if (discriminator instanceof Config.AspectRatioDiscriminator) {
 				System.out.println("Determining aspect ratios for " + discriminator);
