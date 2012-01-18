@@ -46,6 +46,8 @@ public class ProfileGen {
 	static final String INVOCATION = "java -jar profilegen.jar [OPTIONS] [INPUT FILE(S)]";
 	static final int DEFAULT_PASSES = 640;
 	static final int OUTPUT_SIZE = 128;
+	static final float N = 0.002f;
+	static final float M = 0.0005f;
 	
 	public static void main(String[] args) throws FileNotFoundException, UnsupportedEncodingException, JSONException, IOException, NoSuchAlgorithmException, ParseException {
 		Options options = new Options();
@@ -120,7 +122,7 @@ public class ProfileGen {
 						for (File f : letterFolder.listFiles()) {
 							if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
 								float[] input = Util.getInputForNN(ImageIO.read(f));
-								float[] output = identifier.network.run(input);
+								float[] output = identifier.fastNetwork.run(input);
 								
 								Config.LetterClass bestLC = null;
 								double bestScore = 0;
@@ -190,7 +192,7 @@ public class ProfileGen {
 						if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
 							tests++;
 							if (discriminator instanceof Config.NNDiscriminator) {
-								float[] output = ((Config.NNDiscriminator) discriminator).network.run(Util.getInputForNN(ImageIO.read(f)));
+								float[] output = ((Config.NNDiscriminator) discriminator).fastNetwork.run(Util.getInputForNN(ImageIO.read(f)));
 								if (output[0] > 0.5f) {
 									misses++;
 									System.out.println(discriminator.trigger + "(" + f.getName() + ") mis-identified as " + discriminator.alternative);
@@ -266,7 +268,7 @@ public class ProfileGen {
 						if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
 							tests++;
 							if (discriminator instanceof Config.NNDiscriminator) {
-								float[] output = ((Config.NNDiscriminator) discriminator).network.run(Util.getInputForNN(ImageIO.read(f)));
+								float[] output = ((Config.NNDiscriminator) discriminator).fastNetwork.run(Util.getInputForNN(ImageIO.read(f)));
 								if (output[0] <= 0.5f) {
 									misses++;
 									System.out.println(discriminator.alternative + "(" + f.getName() + ") mis-identified as " + discriminator.trigger);
@@ -338,7 +340,7 @@ public class ProfileGen {
 							exL,
 							getInputForNN(ExampleGenerator2.makeLetterImage(exL, identifier.font)),
 							lc.target);
-					in.train(ex, 0.002f, 0.0005f);
+					in.train(ex, N, M);
 				}
 				if (pass % 10 == 0) { System.out.println(pass + "/" + iters); }
 			}
@@ -358,7 +360,7 @@ public class ProfileGen {
 							exL,
 							getInputForNN(ExampleGenerator2.makeLetterImage(exL, discriminator.font)),
 							new float[] { alternative ? 1.0f : 0.0f });
-					nw.train(ex, 0.002f, 0.0005f);
+					nw.train(ex, N, M);
 					if (pass % 100 == 0) { System.out.println(pass / 20 + "/" + iters); }
 				}
 				((Config.NNDiscriminator) discriminator).network = nw;

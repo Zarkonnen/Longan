@@ -5,8 +5,8 @@ import java.util.ArrayList;
 public class Weight {
 	public float value;
 	public float lastAdjustment;
-	public final ArrayList<Connection> connections = new ArrayList<Connection>();
-
+	public final ArrayList<Connection> connections = new ArrayList<Connection>();	
+	
 	public Weight(float value) {
 		this.value = value;
 	}
