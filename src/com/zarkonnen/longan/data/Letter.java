@@ -22,7 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Letter extends Rectangle {
-	public final HashMap<String, java.lang.Double> possibleLetters = new HashMap<String, java.lang.Double>();
+	public final HashMap<ArrayList<String>, java.lang.Double> possibleLetters =
+			new HashMap<ArrayList<String>, java.lang.Double>();
 	public double relativeLineOffset = 0.0;
 	public double relativeSize = 1.0;
 	public boolean[][] mask;
@@ -31,6 +32,11 @@ public class Letter extends Rectangle {
 
 	public Letter(int x, int y, int width, int height) {
 		super(x, y, width, height);
+	}
+	
+	public void setScores(HashMap<ArrayList<String>, java.lang.Double> sc) {
+		possibleLetters.clear();
+		possibleLetters.putAll(sc);
 	}
 	
 	public Letter add(Letter lr2) {
@@ -134,10 +140,10 @@ public class Letter extends Rectangle {
 		}
 	}
 	
-	public String bestLetter() {
-		String bestL = "";
-		double bestP = 0.0;
-		for (Map.Entry<String, java.lang.Double> entry : possibleLetters.entrySet()) {
+	public ArrayList<String> bestLetterClass() {
+		ArrayList<String> bestL = null;
+		double bestP = -100000000;
+		for (Map.Entry<ArrayList<String>, java.lang.Double> entry : possibleLetters.entrySet()) {
 			if (entry.getValue() > bestP) {
 				bestL = entry.getKey();
 				bestP = entry.getValue();
@@ -145,14 +151,18 @@ public class Letter extends Rectangle {
 		}
 		return bestL;
 	}
+	
+	public String bestLetter() {
+		return bestLetterClass().get(0);
+	}
 
 	public double bestScore() {
-		double bestP = 0.0;
-		for (Map.Entry<String, java.lang.Double> entry : possibleLetters.entrySet()) {
-			if (entry.getValue() > bestP) {
-				bestP = entry.getValue();
+		double bestScore = 0.0;
+		for (double score : possibleLetters.values()) {
+			if (score > bestScore) {
+				bestScore = score;
 			}
 		}
-		return bestP;
+		return bestScore;
 	}
 }

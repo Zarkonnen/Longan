@@ -1,366 +1,165 @@
 {
-    "contents": [
+    "contents": [{
+        "numberOfNetworks": 1,
+        "classes": [
+            "a",
+            "b",
+            "cC",
+            "d",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "j",
+            "k",
+            "l",
+            "m",
+            "n",
+            "oO0",
+            "p",
+            "q",
+            "r",
+            "sS",
+            "t",
+            "uU",
+            "vV",
+            "wW",
+            "xX",
+            "y",
+            "zZ",
+            "A",
+            "B",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "Q",
+            "P",
+            "R",
+            "T",
+            "Y",
+            "!",
+            "@",
+            "�",
+            "$",
+            "%",
+            "&",
+            "(",
+            ")",
+            "'",
+            ".",
+            ",",
+            ":",
+            ";",
+            "/",
+            "?",
+            "+",
+            "-",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+        ],
+        "root": true,
+        "sampleSentence": "The quick brown fox jumped over the lazy dog.",
+        "type": "nnIdentifier",
+        "fonts": [
+            {
+                "font": "Georgia",
+                "italic": false
+            },
+            {
+                "font": "Optima",
+                "italic": false
+            },
+            {
+                "font": "Times",
+                "italic": false
+            },
+            {
+                "font": "Times New Roman",
+                "italic": false
+            }
+        ],
+        "proportionalInput": true,
+        "version": "1.0"
+    },
+    {
+      "classes": [
+        "i",
+        "j"
+      ],
+      "fonts": [
         {
-            "classes": [
-                "a",
-                "b",
-                "cC",
-                "d",
-                "e",
-                "f",
-                "g",
-                "h",
-                "i",
-                "j",
-                "k",
-                "l",
-                "m",
-                "n",
-                "oO0",
-                "p",
-                "q",
-                "r",
-                "sS",
-                "t",
-                "u",
-                "vV",
-                "wW",
-                "xX",
-                "y",
-                "zZ",
-                "A",
-                "B",
-                "D",
-                "E",
-                "F",
-                "G",
-                "H",
-                "I",
-                "J",
-                "K",
-                "L",
-                "M",
-                "N",
-                "P",
-                "Q",
-                "R",
-                "T",
-                "U",
-                "Y",
-                "!",
-                "@",
-                "£",
-                "$",
-                "%",
-                "&",
-                "(",
-                ")",
-                "'",
-                ".",
-                ",",
-                ":",
-                ";",
-                "/",
-                "?",
-                "+",
-                "-",
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9"
-            ],
-            "font": "Courier",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "italic": false,
-            "type": "identifier",
-            "version": "1.0"
+          "font": "Georgia"
         },
         {
-            "classes": [
-                "a",
-                "b",
-                "cC",
-                "d",
-                "e",
-                "f",
-                "g",
-                "h",
-                "i",
-                "j",
-                "k",
-                "l",
-                "m",
-                "n",
-                "oO",
-                "p",
-                "q",
-                "r",
-                "sS",
-                "t",
-                "u",
-                "vV",
-                "wW",
-                "x",
-                "y",
-                "zZ",
-                "A",
-                "B",
-                "D",
-                "E",
-                "F",
-                "G",
-                "H",
-                "I",
-                "J",
-                "K",
-                "L",
-                "M",
-                "N",
-                "P",
-                "Q",
-                "R",
-                "T",
-                "U",
-                "X",
-                "Y",
-                "!",
-                "@",
-                "£",
-                "$",
-                "%",
-                "&",
-                "(",
-                ")",
-                "'",
-                ".",
-                ",",
-                ":",
-                ";",
-                "/",
-                "?",
-                "+",
-                "-",
-                "0",
-                "1",
-                "2",
-                "3",
-                "4",
-                "5",
-                "6",
-                "7",
-                "8",
-                "9"
-            ],
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "italic": false,
-            "type": "identifier",
-            "version": "1.0"
+          "font": "Optima"
         },
         {
-            "trigger": "b",
-            "font": "Courier",
-            "alternative": "h",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
+          "font": "Times"
         },
         {
-            "trigger": "1",
-            "font": "Courier",
-            "alternative": "l",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "t",
-            "font": "Courier",
-            "alternative": "l",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "t",
-            "font": "Courier",
-            "alternative": "1",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": ")",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "T",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "L",
-            "font": "Andale Mono",
-            "alternative": "l",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": ";",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "t",
-            "font": "Andale Mono",
-            "alternative": "l",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "l",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "I",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": ";",
-            "font": "Andale Mono",
-            "alternative": "!",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "b",
-            "font": "Andale Mono",
-            "alternative": "h",
-            "italic": false,
-            "type": "discriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "i",
-            "font": "Andale Mono",
-            "alternative": "=",
-            "italic": false,
-            "type": "aspectRatioDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "l",
-            "font": "Andale Mono",
-            "alternative": "i",
-            "italic": false,
-            "type": "numberOfPartsDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "l",
-            "font": "Courier",
-            "alternative": "i",
-            "italic": false,
-            "type": "numberOfPartsDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "i",
-            "font": "Andale Mono",
-            "alternative": "l",
-            "italic": false,
-            "type": "numberOfPartsDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "i",
-            "font": "Courier",
-            "alternative": "l",
-            "italic": false,
-            "type": "numberOfPartsDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "c",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "C",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "o",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "O",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "s",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "S",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "v",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "V",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "w",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "W",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
-        },
-        {
-            "trigger": "z",
-            "font": "Andale Mono",
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "alternative": "Z",
-            "italic": false,
-            "type": "relativeSizeDiscriminator",
-            "version": "1.0"
+          "font": "Times New Roman"
         }
-    ],
+      ],
+      "type": "nearestNeighbourIdentifier"
+    },
+    {
+      "classes": [
+        "6",
+        "c"
+      ],
+      "fonts": [
+        {
+          "font": "Georgia"
+        },
+        {
+          "font": "Optima"
+        },
+        {
+          "font": "Times"
+        },
+        {
+          "font": "Times New Roman"
+        }
+      ],
+      "type": "treeIdentifier"
+    },
+    {
+      "classes": [
+        "b",
+        "h"
+      ],
+      "fonts": [
+        {
+          "font": "Georgia"
+        },
+        {
+          "font": "Optima"
+        },
+        {
+          "font": "Times"
+        },
+        {
+          "font": "Times New Roman"
+        }
+      ],
+      "type": "treeIdentifier"
+    }],
     "type": "config",
     "version": "1.0"
 }

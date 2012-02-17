@@ -3,6 +3,8 @@ package com.zarkonnen.longan.nnidentifier.network;
 import com.zarkonnen.longan.data.Letter;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.Random;
 
@@ -21,7 +23,7 @@ public class Util {
 
 	public static float rnd(float from, float to) { return (to - from) * random.nextFloat() + from; }
 	
-	public static float[] getInputForNN(BufferedImage src) {
+	public static float[] getInputForNN(BufferedImage src, boolean proportional) {
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
 		Graphics g = scaledSrc.getGraphics();
 		g.setColor(Color.WHITE);
@@ -30,14 +32,21 @@ public class Util {
 		int xOffset = 0;
 		int height = 0;
 		int yOffset = 0;
-		if (src.getWidth() > src.getHeight()) {
-			width = 16;
-			height = 16 * src.getHeight() / src.getWidth();
-			yOffset = (16 - height) / 2;
+		if (proportional) {
+			if (src.getWidth() > src.getHeight()) {
+				width = 16;
+				height = 16 * src.getHeight() / src.getWidth();
+				yOffset = (16 - height) / 2;
+			} else {
+				height = 16;
+				width = 16 * src.getWidth() / src.getHeight();
+				xOffset = (16 - width) / 2;
+			}
 		} else {
+			width  = 16;
 			height = 16;
-			width = 16 * src.getWidth() / src.getHeight();
-			xOffset = (16 - width) / 2;
+			xOffset = 0;
+			yOffset = 0;
 		}
 		g.drawImage(src, 6 + xOffset, 6 + yOffset, 6 + xOffset + width, 6 + yOffset + height, 0, 0, src.getWidth(), src.getHeight(), null);
 		src = scaledSrc;
@@ -49,7 +58,38 @@ public class Util {
 		return result;
 	}
 	
-	public static float[] getInputForNN(Letter r, BufferedImage src, int intensityAdjustment) {
+	public static BufferedImage convertInputToImg(float[] in) {
+		int sz = (int) Math.sqrt(in.length);
+		BufferedImage img = new BufferedImage(sz, sz, BufferedImage.TYPE_INT_RGB);
+		for (int y = 0; y < sz; y++) { for (int x = 0; x < sz; x++) {
+			int intensity = (int) ((in[y * sz + x] + 1.0f) / 2.0f * 255.0f);
+			intensity = Math.max(0, Math.min(255, intensity));
+			Color c = new Color(intensity, intensity, intensity);
+			img.setRGB(x, y, c.getRGB());
+		} }
+		BufferedImage img2 = new BufferedImage(sz * 10, sz * 10, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+		g.drawImage(img, 0, 0, sz * 10, sz * 10, null);
+		return img;
+	}
+	
+	public static BufferedImage convertInputToImg(float[][] in) {
+		BufferedImage img = new BufferedImage(in[0].length, in.length, BufferedImage.TYPE_INT_RGB);
+		for (int y = 0; y < in.length; y++) { for (int x = 0; x < in[0].length; x++) {
+			int intensity = (int) ((in[y][x] + 1.0f) / 2.0f * 255.0f);
+			intensity = Math.max(0, Math.min(255, intensity));
+			Color c = new Color(intensity, intensity, intensity);
+			img.setRGB(x, y, c.getRGB());
+		} }
+		BufferedImage img2 = new BufferedImage(in[0].length * 10, in.length * 10, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+		g.drawImage(img, 0, 0, in[0].length * 10, in.length * 10, null);
+		return img2;
+	}
+	
+	public static float[] getInputForNN(Letter r, BufferedImage src, int intensityAdjustment, boolean proportional) {
 		// Masking
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
 		Graphics g = maskedSrc.getGraphics();
@@ -85,7 +125,8 @@ public class Util {
 		int xOffset = 0;
 		int height = 0;
 		int yOffset = 0;
-		if (r.width > r.height) {
+		if (proportional) {
+			if (r.width > r.height) {
 			width = 16;
 			height = 16 * r.height / r.width;
 			yOffset = (16 - height) / 2;
@@ -94,6 +135,13 @@ public class Util {
 			width = 16 * r.width / r.height;
 			xOffset = (16 - width) / 2;
 		}
+		} else {
+			width  = 16;
+			height = 16;
+			xOffset = 0;
+			yOffset = 0;
+		}
+		
 		g.drawImage(
 				src,
 				6 + xOffset, 6 + yOffset,

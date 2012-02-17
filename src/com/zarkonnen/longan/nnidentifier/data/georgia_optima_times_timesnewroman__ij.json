@@ -1,0 +1,28 @@
+{
+    "classes": [
+        "i",
+        "j"
+    ],
+    "root": false,
+    "sampleSentence": "The quick brown fox jumped over the lazy dog.",
+    "type": "nearestNeighbourIdentifier",
+    "fonts": [
+        {
+            "font": "Georgia",
+            "italic": false
+        },
+        {
+            "font": "Optima",
+            "italic": false
+        },
+        {
+            "font": "Times",
+            "italic": false
+        },
+        {
+            "font": "Times New Roman",
+            "italic": false
+        }
+    ],
+    "version": "1.0"
+}

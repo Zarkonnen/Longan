@@ -1,4 +1,5 @@
 {
+    "numberOfNetworks": 1,
     "classes": [
         "a",
         "b",
@@ -20,7 +21,7 @@
         "r",
         "sS",
         "t",
-        "u",
+        "uU",
         "vV",
         "wW",
         "xX",
@@ -39,15 +40,14 @@
         "L",
         "M",
         "N",
-        "P",
         "Q",
+        "P",
         "R",
         "T",
-        "U",
         "Y",
         "!",
         "@",
-        "£",
+        "�",
         "$",
         "%",
         "&",
@@ -72,9 +72,27 @@
         "8",
         "9"
     ],
-    "font": "Courier",
+    "root": true,
     "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-    "italic": false,
-    "type": "identifier",
+    "type": "nnIdentifier",
+    "fonts": [
+        {
+            "font": "Georgia",
+            "italic": false
+        },
+        {
+            "font": "Optima",
+            "italic": false
+        },
+        {
+            "font": "Times",
+            "italic": false
+        },
+        {
+            "font": "Times New Roman",
+            "italic": false
+        }
+    ],
+    "proportionalInput": true,
     "version": "1.0"
 }

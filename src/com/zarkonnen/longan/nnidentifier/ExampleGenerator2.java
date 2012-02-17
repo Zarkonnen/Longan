@@ -13,12 +13,23 @@ public class ExampleGenerator2 {
 	public static BufferedImage makeLetterImage(String l, Config.FontType font) {
 		Random r = new Random();
 		int intensity = 0;
-		int size = 30 + r.nextInt(50);
+		int size = 50 + r.nextInt(50);
 		return getLetter(l, font.font, font.italic, 1, size,
 				intensity, 0,
 				intensity + 200 + r.nextInt(40),
 				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
 				new int[] {1, 1, 1, 1});
+	}
+	
+	public static BufferedImage makeHighlyVariableLetterImage(String l, Config.FontType font) {
+		Random r = new Random();
+		int intensity = r.nextInt(30);
+		int size = 10 + r.nextInt(90);
+		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
+				intensity, -Math.PI / 40 + r.nextDouble() * Math.PI / 20,
+				intensity + 160 + r.nextInt(40),
+				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
+				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)});
 	}
 	
 	static BufferedImage getLetter(String l, String font, boolean italic, int blurIterations, int size, int color, double rot, int cropBoundary,
@@ -40,7 +51,18 @@ public class ExampleGenerator2 {
 		if (img == null) {
 			System.out.println("fish");
 		}
-		return img == null ? getLetter(l, font, italic, 1, size * 2, 0, rot, cropBoundary, noise, widen) : img;
+		return img == null ? getLetter(l, font, italic, blurIterations == 0 ? 0 : 1, size * 2, 0, rot, cropBoundary, noise, widen) : img;
+	}
+	
+	static BufferedImage getSimpleLetter(String l, String font, boolean italic) {
+		BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img.createGraphics();
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, 100, 100);
+		g.setFont(new Font(font, italic ? Font.ITALIC : Font.PLAIN, 40));
+		g.setColor(Color.BLACK);
+		g.drawString(l, 50, 50);
+		return crop(img, 127, new int[] { 0, 0, 0, 0 });
 	}
 	
 	static BufferedImage weaksauculate(BufferedImage img, int color) {

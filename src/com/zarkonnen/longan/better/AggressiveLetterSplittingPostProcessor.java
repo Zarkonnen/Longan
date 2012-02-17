@@ -74,13 +74,17 @@ public class AggressiveLetterSplittingPostProcessor implements PostProcessor {
 				c.metadata.has(Identifier.IDENTIFIER_USED)
 				? c.metadata.get(Identifier.IDENTIFIER_USED).expectedRelativeSizes
 				: new HashMap<String, Double>();
-		for (Map.Entry<String, Double> e : l.possibleLetters.entrySet()) {
-			if (expectedSizes.containsKey(e.getKey()) &&
-				l.relativeSize > expectedSizes.get(e.getKey()) * MAX_SZ_DEV)
-			{
-				continue;
+		for (Map.Entry<ArrayList<String>, Double> e : l.possibleLetters.entrySet()) {
+			boolean plausible = false;
+			for (String pLetter : e.getKey()) {
+				if (expectedSizes.containsKey(pLetter) &&
+					l.relativeSize < expectedSizes.get(pLetter) * MAX_SZ_DEV)
+				{
+					plausible = true;
+					break;
+				}
 			}
-			score = Math.max(score, e.getValue());
+			if (plausible) { score = Math.max(score, e.getValue()); }
 		}
 		return score;
 	}

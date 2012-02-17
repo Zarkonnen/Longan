@@ -1,9 +1,0 @@
-{
-    "trigger": "s",
-    "font": "Andale Mono",
-    "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-    "alternative": "S",
-    "italic": false,
-    "type": "relativeSizeDiscriminator",
-    "version": "1.0"
-}

@@ -20,9 +20,7 @@ import com.zarkonnen.longan.data.Letter;
 import com.zarkonnen.longan.better.AggressiveLetterSplittingPostProcessor;
 import com.zarkonnen.longan.better.BetterChunker2;
 import com.zarkonnen.longan.better.BetterLetterFinder;
-import com.zarkonnen.longan.better.HeuristicPostProcessor;
 import com.zarkonnen.longan.better.IntensityHistogramPreProcessor;
-import com.zarkonnen.longan.better.LetterDimensionsPostProcessor;
 import com.zarkonnen.longan.better.LetterSplittingPostProcessor;
 import com.zarkonnen.longan.better.RotationFixingPreProcessor;
 import com.zarkonnen.longan.better.SpeckleEliminator;
@@ -55,9 +53,7 @@ public class Longan {
 		preps.add(new RotationFixingPreProcessor());
 		ArrayList<PostProcessor> pps = new ArrayList<PostProcessor>();
 		pps.add(new LetterSplittingPostProcessor());
-		pps.add(new AggressiveLetterSplittingPostProcessor());
-		pps.add(new HeuristicPostProcessor());
-		pps.add(new LetterDimensionsPostProcessor());
+		//pps.add(new AggressiveLetterSplittingPostProcessor());
 		pps.add(new SpeckleEliminator());
 		return new Longan(
 			preps,

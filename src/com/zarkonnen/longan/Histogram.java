@@ -62,7 +62,7 @@ public class Histogram {
 		 * 
 		 */
 		int[] newHg = new int[hg.length + kernel.length * 2];
-		offset -= kernel.length;
+		offset -= kernel.length / 2;
 		for (int i = 0; i < newHg.length; i++) {
 			double value = 0.0;
 			for (int j = 0; j < kernel.length; j++) {
@@ -96,6 +96,15 @@ public class Histogram {
 			if (hg[i] > p) { p = hg[i]; }
 		}
 		return p;
+	}
+	
+	public int maxPeakPos() {
+		int p = 0;
+		int pos = 0;
+		for (int i = 0; i < hg.length; i++) {
+			if (hg[i] > p) { p = hg[i]; pos = i; }
+		}
+		return pos + offset;
 	}
 	
 	public int blackWhiteBoundary() {
@@ -137,6 +146,43 @@ public class Histogram {
 		}
 		
 		return fwe + offset;
+	}
+	
+	public int secondPeakOrFirstIfUnavailable() {
+		int fpPtr = 0;
+		int best = 0;
+		for (int i = 0; i < hg.length; i++) {
+			if (hg[i] < best) {
+				break;
+			} else {
+				fpPtr = i;
+				best = hg[i];
+			}
+		}
+		
+		int vallPtr = fpPtr;
+		for (int i = fpPtr; i < hg.length + 1; i++) {
+			if (i == hg.length) { return fpPtr + offset; }
+			if (hg[i] > best) {
+				break;
+			} else {
+				vallPtr = i;
+				best = hg[i];
+			}
+		}
+		
+		int spPtr = vallPtr;
+		for (int i = vallPtr; i < hg.length + 1; i++) {
+			if (i == hg.length) { return fpPtr + offset; }
+			if (hg[i] < best) {
+				break;
+			} else {
+				spPtr = i;
+				best = hg[i];
+			}
+		}
+		
+		return spPtr + offset;
 	}
 	
 	public int firstPeak() {
@@ -222,6 +268,7 @@ public class Histogram {
 		int bwp = altBlackWhiteBoundary() - offset;
 		int fwe = firstValleyEnd() - offset;
 		int fwe127 = blackWhiteBoundary() - offset;
+		int p2 = secondPeakOrFirstIfUnavailable() - offset;
 		for (int i = 0; i < hg.length; i++) {
 			if (i == bwp) {
 				g.setColor(Color.RED);
@@ -247,6 +294,14 @@ public class Histogram {
 			}
 			g.setColor(Color.BLACK);
 			g.fillRect(i, (max - hg[i]) / squash, 1, hg[i] / squash);
+			if (i == p2) {
+				g.setColor(new Color(127, 127, 127, 63));
+				g.fillRect(i, 0, 1, max / squash);
+			}
+			if (i == -offset) {
+				g.setColor(Color.RED);
+				g.fillRect(i, 0, 1, 1);
+			}
 		}
 		return img;
 	}

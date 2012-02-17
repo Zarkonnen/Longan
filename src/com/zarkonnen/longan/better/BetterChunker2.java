@@ -25,9 +25,11 @@ import com.zarkonnen.longan.data.Word;
 import com.zarkonnen.longan.stage.Chunker;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import javax.imageio.ImageIO;
 
 public class BetterChunker2 implements Chunker {
 	static final int MAX_SIZE_OUTLIER = 10;
@@ -41,16 +43,13 @@ public class BetterChunker2 implements Chunker {
 			BufferedImage img,
 			HashMap<String, String> metadata)
 	{
-		ArrayList<Integer> sizes = new ArrayList<Integer>();
+		Histogram sizeHistogram = new Histogram(100);
 		for (Rectangle r : letters) {
-			sizes.add((int) Math.sqrt(r.width * r.height));
+			sizeHistogram.add((int) Math.sqrt(r.width * r.height));
 		}
-		Collections.sort(sizes);
-		long sizeSum = 0;
-		for (int sz : sizes.subList(sizes.size() / 4, sizes.size() * 3 / 4)) {
-			sizeSum += sz;
-		}
-		int avgSize = (int) (sizeSum / (letters.size() / 2));
+		
+		sizeHistogram.convolve(new double[] { 1.0/49, 2.0/49, 3.0/49, 4.0/49, 5.0/49, 6.0/49, 7.0/49, 6.0/49, 5.0/49, 4.0/49, 3.0/49, 2.0/49, 1.0/49 });
+		int avgSize = sizeHistogram.secondPeakOrFirstIfUnavailable();
 		ArrayList<Letter> wholes = new ArrayList<Letter>();
 		ArrayList<Letter> pieces = new ArrayList<Letter>();
 		for (Letter r : letters) {
@@ -129,7 +128,7 @@ public class BetterChunker2 implements Chunker {
 			hg.convolve(new double[] { 100.0 / hg.count() });
 		}
 		
-		int letterToWordSpacingBoundary = hg.firstValleyEnd();
+		int letterToWordSpacingBoundary = hg.firstValleyEnd() - 3; // qqDPS FUDGE
 		
 		metadata.put("letterToWordSpacingBoundary", "" + letterToWordSpacingBoundary); 
 		

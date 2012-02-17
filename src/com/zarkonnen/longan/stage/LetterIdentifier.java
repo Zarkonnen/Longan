@@ -25,5 +25,6 @@ import com.zarkonnen.longan.data.Word;
 public interface LetterIdentifier {
 	public void identify(Result result);
 	public void reIdentify(Letter l, Letter source, Word word, Line line, Column column, Result result);
+	public void discriminateTopLetterClass(Letter l, Letter source, Word word, Line line, Column column, Result result);
 	public void finish();
 }

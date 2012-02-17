@@ -1,5 +1,6 @@
 package com.zarkonnen.longan.nnidentifier;
 
+import com.zarkonnen.longan.nnidentifier.network.Network;
 import java.awt.Rectangle;
 import com.zarkonnen.longan.data.Letter;
 import java.awt.Graphics2D;
@@ -27,10 +28,10 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import org.apache.commons.cli.OptionBuilder;
@@ -44,7 +45,7 @@ import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 
 public class ProfileGen {
 	static final String INVOCATION = "java -jar profilegen.jar [OPTIONS] [INPUT FILE(S)]";
-	static final int DEFAULT_PASSES = 640;
+	static final int DEFAULT_PASSES = 30000;
 	static final int OUTPUT_SIZE = 128;
 	static final float N = 0.002f;
 	static final float M = 0.0005f;
@@ -91,6 +92,7 @@ public class ProfileGen {
 		}
 	}
 	
+	static int q;
 	public static void testNetworks(Config config, File imageFolder) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
 		generateTargets(config);
 		for (Config.Identifier identifier : config.identifiers) {
@@ -111,194 +113,91 @@ public class ProfileGen {
 						if (!fontFile.exists()) {
 							System.out.println("(No font file \"" + letterToFilename(l) + "-font.atr\" found.)");
 						} else {
+							ArrayList<String> fontNames = new ArrayList<String>();
+							for (Config.FontType ft : identifier.fonts) {
+								fontNames.add(ft.font);
+							}
 							ATRReader r = new ATRReader(new BufferedInputStream(new FileInputStream(fontFile)));
 							List<String> line = null;
 							while ((line = r.readRecord()) != null) {
-								if (!line.get(1).equals(identifier.font.toString())) {
+								if (!fontNames.contains(line.get(1))) {
 									doNotTest.add(line.get(0));
 								}
 							}
 						}
 						for (File f : letterFolder.listFiles()) {
 							if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
-								float[] input = Util.getInputForNN(ImageIO.read(f));
-								float[] output = identifier.fastNetwork.run(input);
-								
-								Config.LetterClass bestLC = null;
-								double bestScore = 0;
-								for (Config.LetterClass cmpLC : identifier.classes) {
-									double score = Identifier.score(output, cmpLC.target);
-									if (score > bestScore) {
-										bestLC = cmpLC;
-										bestScore = score;
+								tests++;
+								if (identifier instanceof Config.NNIdentifier) {
+									Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
+									float[] input = Util.getInputForNN(ImageIO.read(f), id.proportionalInput);
+									HashMap<Config.LetterClass, Double> scores = new HashMap<Config.LetterClass, Double>();
+									for (int i = 0; i < id.numberOfNetworks; i++) {
+										float[] output = id.fastNetworks.get(i).run(input);
+										for (Config.LetterClass cmpLC : identifier.classes) {
+											/*System.out.println(l);
+											System.out.println(Arrays.toString(output));
+											System.out.println(cmpLC);
+											System.out.println(Arrays.toString(cmpLC.targets[i]));*/
+											double score = Identifier.score(output, cmpLC.targets[i]);
+											//System.out.println(l + " as " + cmpLC + " " + score);
+											//System.out.println();
+											if (!scores.containsKey(cmpLC)) {
+												scores.put(cmpLC, score);
+											} else {
+												scores.put(cmpLC, scores.get(cmpLC) + score);
+											}
+										}
+									}
+
+									Config.LetterClass bestLC = null;
+									double bestScore = 0;
+									for (Map.Entry<Config.LetterClass, Double> e : scores.entrySet()) {
+										if (bestLC == null || e.getValue() > bestScore) {
+											bestLC = e.getKey();
+											bestScore = e.getValue();
+										}
+									}
+									if (bestLC != lc) {
+										misses++;
+										System.out.println(l + "(" + f.getName() + ") mis-identified as " + bestLC);
 									}
 								}
-								tests++;
-								if (bestLC != lc) {
-									misses++;
-									System.out.println(l + "(" + f.getName() + ") mis-identified as " + bestLC);
+								if (identifier instanceof Config.NumberOfPartsIdentifier) {
+									Config.NumberOfPartsIdentifier id = (Config.NumberOfPartsIdentifier) identifier;
+									BufferedImage img = ImageIO.read(f);
+									int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
+									boolean aboveBoundary = n > id.numberOfPartsBoundary;
+									if (id.firstIsAboveBoundary != aboveBoundary) {
+										misses++;
+										System.out.println(l + "(" + f.getName() + ") mis-identified.");
+									}
 								}
-							}
-						}
-					}
-				}
-				System.out.println((tests - misses) + "/" + tests);
-				System.out.println(100.0 * (tests - misses) / tests + "%");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		for (Config.Discriminator discriminator : config.discriminators) {
-			try {
-				System.out.println();
-				System.out.println("Testing " + discriminator);
-				int misses = 0;
-				int tests = 0;
-				File letterFolder = new File(imageFolder, letterToFilename(discriminator.trigger));
-				if (!letterFolder.exists()) {
-					System.out.println("(No test data for letter \"" + discriminator.trigger + "\".)");
-					continue;
-				}
-				File fontFile = new File(imageFolder, letterToFilename(discriminator.trigger) + "-font.atr");
-				HashSet<String> doNotTest = new HashSet<String>();
-				if (!fontFile.exists()) {
-					System.out.println("(No font file \"" + letterToFilename(discriminator.trigger) + "-font.atr + \" found.)");
-				} else {
-					ATRReader r = new ATRReader(new BufferedInputStream(new FileInputStream(fontFile)));
-					List<String> line = null;
-					while ((line = r.readRecord()) != null) {
-						if (!line.get(1).equals(discriminator.font.toString())) {
-							doNotTest.add(line.get(0));
-						}
-					}
-				}
-				HashMap<String, Double> sizes = new HashMap<String, Double>();
-				File sizeFile = new File(imageFolder, letterToFilename(discriminator.trigger) + "-size.atr");
-				if (!sizeFile.exists()) {
-					System.out.println("(No size file \"" + letterToFilename(discriminator.trigger) + "-size.atr + \" found.)");
-				} else {
-					ATRReader r = new ATRReader(new BufferedInputStream(new FileInputStream(sizeFile)));
-					List<String> line = null;
-					while ((line = r.readRecord()) != null) {
-						sizes.put(line.get(0), Double.parseDouble(line.get(1)));
-					}
-				}
-				if (discriminator instanceof Config.NNDiscriminator ||
-					discriminator instanceof Config.AspectRatioDiscriminator ||
-					discriminator instanceof Config.NumberOfPartsDiscriminator ||
-					discriminator instanceof Config.RelativeSizeDiscriminator)
-				{
-					for (File f : letterFolder.listFiles()) {
-						if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
-							tests++;
-							if (discriminator instanceof Config.NNDiscriminator) {
-								float[] output = ((Config.NNDiscriminator) discriminator).fastNetwork.run(Util.getInputForNN(ImageIO.read(f)));
-								if (output[0] > 0.5f) {
-									misses++;
-									System.out.println(discriminator.trigger + "(" + f.getName() + ") mis-identified as " + discriminator.alternative);
+								if (identifier instanceof Config.TreeIdentifier) {
+									Config.TreeIdentifier id = (Config.TreeIdentifier) identifier;
+									Config.LetterClass classification = TreePredict.vote(id.tree.classify(
+										TreePredict.getImg(ImageIO.read(f), null)));
+									if (!classification.equals(lc)) {
+										misses++;
+										System.out.println(l + "(" + f.getName() + ") mis-identified as " + classification);
+									}
 								}
-							}
-							if (discriminator instanceof Config.AspectRatioDiscriminator) {
-								BufferedImage img = ImageIO.read(f);
-								double aspectRatio = (img.getWidth() * 1.0) / img.getHeight();
-								boolean aboveBoundary = aspectRatio > ((Config.AspectRatioDiscriminator) discriminator).boundaryRatio;
-								if (((Config.AspectRatioDiscriminator) discriminator).triggerIsAboveBoundary != aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.trigger + "(" + f.getName() + ") mis-identified as " + discriminator.alternative);
-								}
-							}
-							if (discriminator instanceof Config.NumberOfPartsDiscriminator) {
-								BufferedImage img = ImageIO.read(f);
-								int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
-								boolean aboveBoundary = n > ((Config.NumberOfPartsDiscriminator) discriminator).numberOfPartsBoundary;
-								if (((Config.NumberOfPartsDiscriminator) discriminator).triggerIsAboveBoundary != aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.trigger + "(" + f.getName() + ") mis-identified as " + discriminator.alternative);
-								}
-							}
-							if (discriminator instanceof Config.RelativeSizeDiscriminator) {
-								if (!sizes.containsKey(f.getName().substring(0, f.getName().length() - 4))) { continue; }
-								double sz = sizes.get(f.getName().substring(0, f.getName().length() - 4));
-								boolean aboveBoundary = sz > ((Config.RelativeSizeDiscriminator) discriminator).boundarySize;
-								if (((Config.RelativeSizeDiscriminator) discriminator).triggerIsAboveBoundary != aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.trigger + "(" + f.getName() + ") mis-identified as " + discriminator.alternative);
-								}
-							}
-						}
-					}
-				}
-
-
-				letterFolder = new File(imageFolder, letterToFilename(discriminator.alternative));
-				if (!letterFolder.exists()) {
-					System.out.println("(No test data for letter \"" + discriminator.alternative + "\".)");
-					continue;
-				}
-				fontFile = new File(imageFolder, letterToFilename(discriminator.alternative) + "-font.atr");
-				doNotTest = new HashSet<String>();
-				if (!fontFile.exists()) {
-					System.out.println("(No font file \"" + letterToFilename(discriminator.alternative) + "-font.atr + \" found.)");
-				} else {
-					ATRReader r = new ATRReader(new BufferedInputStream(new FileInputStream(fontFile)));
-					List<String> line = null;
-					while ((line = r.readRecord()) != null) {
-						if (!line.get(1).equals(discriminator.font.toString())) {
-							doNotTest.add(line.get(0));
-						}
-					}
-				}
-				sizes.clear();
-				sizeFile = new File(imageFolder, letterToFilename(discriminator.alternative) + "-size.atr");
-				if (!sizeFile.exists()) {
-					System.out.println("(No size file \"" + letterToFilename(discriminator.alternative) + "-size.atr + \" found.)");
-				} else {
-					ATRReader r = new ATRReader(new BufferedInputStream(new FileInputStream(sizeFile)));
-					List<String> line = null;
-					while ((line = r.readRecord()) != null) {
-						sizes.put(line.get(0), Double.parseDouble(line.get(1)));
-					}
-				}
-				if (discriminator instanceof Config.NNDiscriminator ||
-					discriminator instanceof Config.AspectRatioDiscriminator ||
-					discriminator instanceof Config.NumberOfPartsDiscriminator ||
-					discriminator instanceof Config.RelativeSizeDiscriminator)
-				{
-					for (File f : letterFolder.listFiles()) {
-						if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
-							tests++;
-							if (discriminator instanceof Config.NNDiscriminator) {
-								float[] output = ((Config.NNDiscriminator) discriminator).fastNetwork.run(Util.getInputForNN(ImageIO.read(f)));
-								if (output[0] <= 0.5f) {
-									misses++;
-									System.out.println(discriminator.alternative + "(" + f.getName() + ") mis-identified as " + discriminator.trigger);
-								}
-							}
-							if (discriminator instanceof Config.AspectRatioDiscriminator) {
-								BufferedImage img = ImageIO.read(f);
-								double aspectRatio = (img.getWidth() * 1.0) / img.getHeight();
-								boolean aboveBoundary = aspectRatio > ((Config.AspectRatioDiscriminator) discriminator).boundaryRatio;
-								if (((Config.AspectRatioDiscriminator) discriminator).triggerIsAboveBoundary == aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.alternative + "(" + f.getName() + ") mis-identified as " + discriminator.trigger);
-								}
-							}
-							if (discriminator instanceof Config.NumberOfPartsDiscriminator) {
-								BufferedImage img = ImageIO.read(f);
-								int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
-								boolean aboveBoundary = n > ((Config.NumberOfPartsDiscriminator) discriminator).numberOfPartsBoundary;
-								if (((Config.NumberOfPartsDiscriminator) discriminator).triggerIsAboveBoundary == aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.alternative + "(" + f.getName() + ") mis-identified as " + discriminator.trigger);
-								}
-							}
-							if (discriminator instanceof Config.RelativeSizeDiscriminator) {
-								if (!sizes.containsKey(f.getName().substring(0, f.getName().length() - 4))) { continue; }
-								double sz = sizes.get(f.getName().substring(0, f.getName().length() - 4));
-								boolean aboveBoundary = sz > ((Config.RelativeSizeDiscriminator) discriminator).boundarySize;
-								if (((Config.RelativeSizeDiscriminator) discriminator).triggerIsAboveBoundary == aboveBoundary) {
-									misses++;
-									System.out.println(discriminator.alternative + "(" + f.getName() + ") mis-identified as " + discriminator.trigger);
+								if (identifier instanceof Config.NearestNeighbourIdentifier) {
+									Config.NearestNeighbourIdentifier id = (Config.NearestNeighbourIdentifier) identifier;
+									Config.LetterClass best = null;
+									double leastError = -1;
+									for (Config.LetterClass letterClass : id.classes) {
+										double lcLeastError = id.comparisons.leastError(letterClass.members,
+												Util.getInputForNN(ImageIO.read(f), false));
+										if (best == null || lcLeastError < leastError) {
+											best = letterClass;
+											leastError = lcLeastError;
+										}
+									}
+									if (!best.equals(lc)) {
+										misses++;
+										System.out.println(l + "(" + f.getName() + ") mis-identified as " + best);
+									}
 								}
 							}
 						}
@@ -329,82 +228,73 @@ public class ProfileGen {
 		generateTargets(config);
 		Random r = new Random();
 		for (Config.Identifier identifier : config.identifiers) {
-			System.out.println("Training network for " + identifier);
-			IdentifierNet in = new IdentifierNet();
-			ArrayList<Config.LetterClass> classes = new ArrayList<Config.LetterClass>(identifier.classes);
-			for (int pass = 0; pass < iters; pass++) {
-				Collections.shuffle(classes);
-				for (Config.LetterClass lc : classes) {
-					String exL = lc.members.get(r.nextInt(lc.members.size()));
-					Example ex = new Example(
-							exL,
-							getInputForNN(ExampleGenerator2.makeLetterImage(exL, identifier.font)),
-							lc.target);
-					in.train(ex, N, M);
+			if (identifier instanceof Config.NNIdentifier) {
+				Config.NNIdentifier id = (Config.NNIdentifier) identifier;
+				int numPasses = iters / identifier.fonts.size() / identifier.classes.size();
+				for (int i = 0; i < id.numberOfNetworks; i++) {
+					System.out.println("Training network #" + i + " for " + identifier);
+					ArrayList<Config.LetterClass> classes = new ArrayList<Config.LetterClass>(identifier.classes);
+					//boolean twoClasses = classes.size() == 2;
+					Network nw = new IdentifierNet().nw;// qqDPS(twoClasses ? new DiscriminatorNet().nw : new IdentifierNet().nw);
+					for (int pass = 0; pass < numPasses; pass++) {
+						Collections.shuffle(classes);
+						for (Config.LetterClass lc : classes) {
+							for (Config.FontType ft : identifier.fonts) {
+								String exL = lc.members.get(r.nextInt(lc.members.size()));
+								float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft), id.proportionalInput);
+								Example ex = new Example(
+										exL,
+										input,
+										lc.targets[i]);
+								nw.train(ex.input, ex.target, N, M);
+							}
+						}
+						if (pass % 10 == 0) { System.out.println(pass + "/" + numPasses); }
+					}
+					id.networks.add(nw);
 				}
-				if (pass % 10 == 0) { System.out.println(pass + "/" + iters); }
 			}
-			identifier.network = in;
+			if (identifier instanceof Config.NumberOfPartsIdentifier) {
+				System.out.println("Determining number of parts for " + identifier);
+				setNumberOfPartsBoundary((Config.NumberOfPartsIdentifier) identifier);
+			}
+			if (identifier instanceof Config.TreeIdentifier) {
+				System.out.println("Generating tree for " + identifier);
+				((Config.TreeIdentifier) identifier).tree = TreePredict.buildTree((Config.TreeIdentifier) identifier);
+			}
+			if (identifier instanceof Config.NearestNeighbourIdentifier) {
+				System.out.println("Generating comparison data for " + identifier);
+				((Config.NearestNeighbourIdentifier) identifier).comparisons = NearestNeighbour.createComparisons(((Config.NearestNeighbourIdentifier) identifier));
+			}
 			setExpectedRelativeSizes(identifier);
 			setAspectRatios(identifier);
-		}
-		
-		for (Config.Discriminator discriminator : config.discriminators) {
-			if (discriminator instanceof Config.NNDiscriminator) {
-				System.out.println("Training network for " + discriminator);
-				DiscriminatorNet nw = new DiscriminatorNet();
-				for (int pass = 0; pass < iters * 20; pass++) {
-					boolean alternative = r.nextBoolean();
-					String exL = alternative ? discriminator.alternative : discriminator.trigger;
-					Example ex = new Example(
-							exL,
-							getInputForNN(ExampleGenerator2.makeLetterImage(exL, discriminator.font)),
-							new float[] { alternative ? 1.0f : 0.0f });
-					nw.train(ex, N, M);
-					if (pass % 100 == 0) { System.out.println(pass / 20 + "/" + iters); }
-				}
-				((Config.NNDiscriminator) discriminator).network = nw;
-			}
-			if (discriminator instanceof Config.AspectRatioDiscriminator) {
-				System.out.println("Determining aspect ratios for " + discriminator);
-				setAspectRatioBoundary((Config.AspectRatioDiscriminator) discriminator);
-			}
-			if (discriminator instanceof Config.NumberOfPartsDiscriminator) {
-				System.out.println("Determining number of parts for " + discriminator);
-				setNumberOfPartsBoundary((Config.NumberOfPartsDiscriminator) discriminator);
-			}
-			if (discriminator instanceof Config.RelativeSizeDiscriminator) {
-				System.out.println("Determining relative sizes for " + discriminator);
-				setRelativeSizeBoundary((Config.RelativeSizeDiscriminator) discriminator);
-			}
 		}
 	}
 	
 	static double getAspectRatio(Config.FontType font, String letter) {
 		Rectangle rect = getLetterRect(font, letter);
-		return (rect.getWidth() + 10) / (rect.getHeight() + 10);
-	}
-	
-	static void setAspectRatioBoundary(Config.AspectRatioDiscriminator d) {
-		double triggerRatio = getAspectRatio(d.font, d.trigger);
-		double altRatio = getAspectRatio(d.font, d.alternative);
-		d.boundaryRatio = triggerRatio / 2 + altRatio / 2;
-		d.triggerIsAboveBoundary = triggerRatio > altRatio;
+		return rect.getWidth() / rect.getHeight();//(rect.getWidth() + 10) / (rect.getHeight() + 10);
 	}
 	
 	static void setExpectedRelativeSizes(Config.Identifier id) {
 		id.expectedRelativeSizes = new HashMap<String, Double>();
 		double sizeAcc = 0;
-		for (int i = 0; i < id.sampleSentence.length(); i++) {
-			double sz = getSize(id.font, id.sampleSentence.substring(i, i + 1));
-			if (sz < 99) {
-				sizeAcc += sz;
+		for (Config.FontType ft : id.fonts) {
+			for (int i = 0; i < id.sampleSentence.length(); i++) {
+				double sz = getSize(ft, id.sampleSentence.substring(i, i + 1));
+				if (sz < 99) {
+					sizeAcc += sz;
+				}
 			}
 		}
-		double avgSize = sizeAcc / id.sampleSentence.length();
+		double avgSize = sizeAcc / id.sampleSentence.length() / id.fonts.size();
 		for (Config.LetterClass lc : id.classes) {
 			for (String l : lc.members) {
-				id.expectedRelativeSizes.put(l, getSize(id.font, l) / avgSize);
+				double avg = 0.0;
+				for (Config.FontType ft : id.fonts) {
+					avg += getSize(ft, l);
+				}
+				id.expectedRelativeSizes.put(l, avg / id.fonts.size() / avgSize);
 			}
 		}
 	}
@@ -413,7 +303,11 @@ public class ProfileGen {
 		id.expectedAspectRatios = new HashMap<String, Double>();
 		for (Config.LetterClass lc : id.classes) {
 			for (String l : lc.members) {
-				id.expectedAspectRatios.put(l, getAspectRatio(id.font, l));
+				double avg = 0.0;
+				for (Config.FontType ft : id.fonts) {
+					avg += getAspectRatio(ft, l);
+				}
+				id.expectedAspectRatios.put(l, avg / id.fonts.size());
 			}
 		}
 	}
@@ -449,44 +343,57 @@ public class ProfileGen {
 		return Math.sqrt(rect.width * rect.height);
 	}
 	
-	static void setRelativeSizeBoundary(Config.RelativeSizeDiscriminator d) {
-		double sizeAcc = 0;
-		for (int i = 0; i < d.sampleSentence.length(); i++) {
-			double sz = getSize(d.font, d.sampleSentence.substring(i, i + 1));
-			if (sz < 99) {
-				sizeAcc += sz;
-			}
+	static void setNumberOfPartsBoundary(Config.NumberOfPartsIdentifier id) {
+		if (id.classes.size() != 2) {
+			id.enabled = false;
+			System.out.println(id + ": NumberOfPartsIdentifiers need to have exactly 2 classes.");
+			return;
 		}
-		double avgSize = sizeAcc / d.sampleSentence.length();
-		System.out.println("Avg size is " + avgSize);
-		double triggerRelSize = getSize(d.font, d.trigger) / avgSize;
-		System.out.println("Trigger rel size: " + triggerRelSize);
-		double altRelSize = getSize(d.font, d.alternative) / avgSize;
-		System.out.println("Alt rel size: " + altRelSize);
-		d.boundarySize = triggerRelSize / 2 + altRelSize / 2;
-		System.out.println("Boundary: " + d.boundarySize);
-		d.triggerIsAboveBoundary = triggerRelSize > altRelSize;
-	}
-	
-	static void setNumberOfPartsBoundary(Config.NumberOfPartsDiscriminator d) {
 		BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
-		g.setFont(new Font(d.font.font, d.font.italic ? Font.ITALIC : Font.PLAIN, 50));
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, 100, 100);
-		g.setColor(Color.BLACK);
-		g.drawString(d.trigger, 50, 50);
-		int triggerN = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, 100, 100);
-		g.setColor(Color.BLACK);
-		g.drawString(d.alternative, 50, 50);
-		int altN = new BetterLetterFinder().find(img, new HashMap<String, String>()).size(); //towers
-		if (triggerN == altN) {
-			System.out.println("Warning: " + d.trigger + " and " + d.alternative + " have the " +
-					"same number of parts. Their NumberOfPartsDiscriminator has been disabled.");
+		int n0 = -1;
+		int n1 = -1;
+		for (Config.FontType ft : id.fonts) {
+			g.setFont(new Font(ft.font, ft.italic ? Font.ITALIC : Font.PLAIN, 50));
+			for (String l : id.classes.get(0).members) {
+				g.setColor(Color.WHITE);
+				g.fillRect(0, 0, 100, 100);
+				g.setColor(Color.BLACK);
+				g.drawString(l, 50, 50);
+				int myN0 = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
+				if (n0 == -1) {
+					n0 = myN0;
+				} else {
+					if (n0 != myN0) {
+						id.enabled = false;
+						System.out.println(id + ": " + id.classes.get(0) + " doesn't all have the" +
+								"same number of parts.");
+						return;
+					}
+				}
+			}
+			for (String l : id.classes.get(1).members) {
+				g.setColor(Color.WHITE);
+				g.fillRect(0, 0, 100, 100);
+				g.setColor(Color.BLACK);
+				g.drawString(l, 50, 50);
+				int myN1 = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
+				if (n1 == -1) {
+					n1 = myN1;
+				} else {
+					if (n1 != myN1) {
+						id.enabled = false;
+						System.out.println(id + ": " + id.classes.get(1) + " doesn't all have the" +
+								"same number of parts.");
+						return;
+					}
+				}
+			}
+		}
+		if (n0 == n1) {
+			System.out.println(id + ": both classes have the same number of parts.");
 		} else {
-			d.enabled = true;
+			id.enabled = true;
 			/*
 				Logic:
 				n > boundary != triggerAbove --> use alt
@@ -497,12 +404,12 @@ public class ProfileGen {
 				2		3	2			false	2	false	tr		√
 				2		3	2			false	3	true	alt		√
 			 */
-			if (triggerN > altN) {
-				d.numberOfPartsBoundary = altN;
-				d.triggerIsAboveBoundary = true;
+			if (n0 > n1) {
+				id.numberOfPartsBoundary = n1;
+				id.firstIsAboveBoundary = true;
 			} else {
-				d.numberOfPartsBoundary = triggerN;
-				d.triggerIsAboveBoundary = false;
+				id.numberOfPartsBoundary = n0;
+				id.firstIsAboveBoundary = false;
 			}
 		}
 	}
@@ -510,40 +417,29 @@ public class ProfileGen {
 	public static void generateTargets(Config config) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 		MessageDigest md = MessageDigest.getInstance("MD5");
 		for (Config.Identifier identifier : config.identifiers) {
-			HashSet<FloatArray> used = new HashSet<FloatArray>();
+			int nNetworks = (identifier instanceof Config.NNIdentifier) ? ((Config.NNIdentifier) identifier).numberOfNetworks : 1;
+			//boolean twoClasses = identifier.classes.size() == 2;
 			for (Config.LetterClass lc : identifier.classes) {
-				String hashable = lc.toString();
-				while (true) {
-					byte[] digest = md.digest(hashable.getBytes("UTF-8"));
-					FloatArray data = new FloatArray(new float[OUTPUT_SIZE]);
-					for (int i = 0; i < 16; i++) {
-						for (int j = 0; j < 8; j++) {
-							data.data[i * 8 + j] = (digest[i] >>> j) & 1;
+				/*if (twoClasses) {
+					lc.targets = new float[nNetworks][1];
+					for (int n = 0; n < nNetworks; n++) {
+						lc.targets[n][0] = identifier.classes.indexOf(lc);
+					}
+				} else {*/
+					lc.targets = new float[nNetworks][0];
+					for (int n = 0; n < nNetworks; n++) {
+						String hashable = lc.toString() + n;
+						byte[] digest = md.digest(hashable.getBytes("UTF-8"));
+						float[] data = new float[OUTPUT_SIZE];
+						for (int i = 0; i < 16; i++) {
+							for (int j = 0; j < 8; j++) {
+								data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 1.0f : 0f;
+							}
 						}
+						lc.targets[n] = data;
 					}
-					if (!used.contains(data)) {
-						lc.target = data.data;
-						break;
-					}
-					hashable += "+";
-				}
+				//}
 			}
-		}
-	}
-	
-	static class FloatArray {
-		float[] data;
-		public FloatArray(float[] data) { this.data = data; }
-		
-		@Override
-		public boolean equals(Object o) {
-			if (!(o instanceof FloatArray)) { return false; }
-			return Arrays.equals(data, ((FloatArray) o).data);
-		}
-
-		@Override
-		public int hashCode() {
-			return 111 + Arrays.hashCode(this.data);
 		}
 	}
 }
