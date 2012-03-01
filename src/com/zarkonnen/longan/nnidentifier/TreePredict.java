@@ -42,12 +42,13 @@ public class TreePredict {
 	}
 	
 	public static TreeNode<Config.LetterClass> buildTree(Config.TreeIdentifier ti) {
+		Random r = new Random(ti.seed);
 		ArrayList<Img<Config.LetterClass>> imgs = new ArrayList<Img<Config.LetterClass>>();
 		for (int i = 0; i < 300; i++) {
 			for (Config.FontType ft : ti.fonts) {
 				for (Config.LetterClass lc : ti.classes) {
 					for (String l : lc.members) {
-						imgs.add(getImg(l, ft, lc));
+						imgs.add(getImg(l, ft, lc, r));
 					}
 				}
 			}
@@ -288,11 +289,9 @@ public class TreePredict {
 			this.tag = tag;
 		}
 	}
-	
-	static Random r = new Random();
-	
-	public static <T> Img<T> getImg(String l, FontType ft, T tag) {
-		return getImg(ExampleGenerator2.makeHighlyVariableLetterImage(l, ft), tag);
+		
+	public static <T> Img<T> getImg(String l, FontType ft, T tag, Random r) {
+		return getImg(ExampleGenerator2.makeHighlyVariableLetterImage(l, ft, r), tag);
 	}
 		
 	public static <T> Img<T> getImg(BufferedImage src, T tag) {

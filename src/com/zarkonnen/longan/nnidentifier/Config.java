@@ -113,6 +113,7 @@ public class Config {
 		public HashMap<String, Double> expectedRelativeSizes;
 		public HashMap<String, Double> expectedAspectRatios;
 		public String sampleSentence = DEFAULT_SAMPLE_SENTENCE;
+		public long seed = System.currentTimeMillis();
 		
 		@Override
 		public String toString() { return "Identifier for " + Arrays.toString(fonts.toArray()) +
@@ -122,6 +123,7 @@ public class Config {
 			if (!json.optString("version", "1.0").equals("1.0")) {
 				throw new JSONException("Unknown config file version.");
 			}
+			seed = json.optLong("seed", seed);
 			root = json.optBoolean("root", false);
 			sampleSentence = json.optString("sampleSentence", DEFAULT_SAMPLE_SENTENCE);
 			fonts = new ArrayList<FontType>();
@@ -147,6 +149,7 @@ public class Config {
 			JSONObject json = new JSONObject();
 			json.put("version", "1.0");
 			json.put("root", root);
+			json.put("seed", seed);
 			json.put("sampleSentence", sampleSentence);
 			JSONArray fontsA = new JSONArray();
 			json.put("fonts", fontsA);

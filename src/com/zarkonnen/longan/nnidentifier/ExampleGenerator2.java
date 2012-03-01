@@ -10,30 +10,28 @@ import java.awt.image.Kernel;
 import java.util.Random;
 
 public class ExampleGenerator2 {
-	public static BufferedImage makeLetterImage(String l, Config.FontType font) {
-		Random r = new Random();
+	public static BufferedImage makeLetterImage(String l, Config.FontType font, Random r) {
 		int intensity = 0;
 		int size = 50 + r.nextInt(50);
 		return getLetter(l, font.font, font.italic, 1, size,
 				intensity, 0,
 				intensity + 200 + r.nextInt(40),
 				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
-				new int[] {1, 1, 1, 1});
+				new int[] {1, 1, 1, 1}, r);
 	}
 	
-	public static BufferedImage makeHighlyVariableLetterImage(String l, Config.FontType font) {
-		Random r = new Random();
+	public static BufferedImage makeHighlyVariableLetterImage(String l, Config.FontType font, Random r) {
 		int intensity = r.nextInt(30);
 		int size = 10 + r.nextInt(90);
 		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
 				intensity, -Math.PI / 40 + r.nextDouble() * Math.PI / 20,
 				intensity + 160 + r.nextInt(40),
 				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
-				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)});
+				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)}, r);
 	}
 	
 	static BufferedImage getLetter(String l, String font, boolean italic, int blurIterations, int size, int color, double rot, int cropBoundary,
-			int noise, int[] widen) {
+			int noise, int[] widen, Random r) {
 		BufferedImage img = new BufferedImage(size * 2, size * 2, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
 		g.setColor(Color.WHITE);
@@ -42,7 +40,6 @@ public class ExampleGenerator2 {
 		g.setColor(new Color(color, color, color));
 		g.rotate(rot);
 		g.drawString(l, size, size);
-		Random r = new Random();
 		for (int i = 0; i < blurIterations; i++) {
 			img = noise(img, noise, r);
 			img = blur(img);
@@ -51,7 +48,7 @@ public class ExampleGenerator2 {
 		if (img == null) {
 			System.out.println("fish");
 		}
-		return img == null ? getLetter(l, font, italic, blurIterations == 0 ? 0 : 1, size * 2, 0, rot, cropBoundary, noise, widen) : img;
+		return img == null ? getLetter(l, font, italic, blurIterations == 0 ? 0 : 1, size * 2, 0, rot, cropBoundary, noise, widen, r) : img;
 	}
 	
 	static BufferedImage getSimpleLetter(String l, String font, boolean italic) {

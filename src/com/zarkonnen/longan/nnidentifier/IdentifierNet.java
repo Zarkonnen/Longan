@@ -12,9 +12,10 @@ import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 
 public class IdentifierNet {
 	public Network nw;
-	Random r = new Random();
+	Random r;
 	
-	public IdentifierNet() {
+	public IdentifierNet(long seed) {
+		r = new Random(seed);
 		Layer input = new Layer("Input");
 		for (int y = 0; y < 28; y++) { for (int x = 0; x < 28; x++) {
 			input.nodes.add(new Node("input " + y + "/" + x));
@@ -59,7 +60,7 @@ public class IdentifierNet {
 		// Connect input to h1
 		for (int m = 0; m < 6; m++) {
 			for (int wY = 0; wY < 5; wY++) { for (int wX = 0; wX < 5; wX++) {
-				Weight w = new Weight(rnd(-2.0f / 26, 2.0f / 26));
+				Weight w = new Weight(rnd(-2.0f / 26, 2.0f / 26, r));
 				input.weights.add(w);
 				for (int y = 0; y < 24; y++) { for (int x = 0; x < 24; x++) {
 					new Connection(
@@ -78,7 +79,7 @@ public class IdentifierNet {
 			}}
 			
 			// Bias
-			Weight w = new Weight(rnd(-2.0f / 26, 2.0f / 26));
+			Weight w = new Weight(rnd(-2.0f / 26, 2.0f / 26, r));
 			input.weights.add(w);
 			for (int y = 0; y < 24; y++) { for (int x = 0; x < 24; x++) {
 				new Connection(
@@ -132,7 +133,7 @@ public class IdentifierNet {
 			for (int m3 = 0; m3 < 16; m3++) {
 				if (!table[m1][m3]) { continue; }
 				for (int wY = 0; wY < 5; wY++) { for (int wX = 0; wX < 5; wX++) {
-					Weight w = new Weight(rnd(-2.0f / 76, 2.0f / 76));
+					Weight w = new Weight(rnd(-2.0f / 76, 2.0f / 76, r));
 					h2.weights.add(w);
 					for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
 						new Connection(
@@ -156,7 +157,7 @@ public class IdentifierNet {
 		// Add biases
 		for (int m3 = 0; m3 < 16; m3++) {
 			// Add bias
-			Weight w = new Weight(rnd(-2.0f / 76, 2.0f / 76));
+			Weight w = new Weight(rnd(-2.0f / 76, 2.0f / 76, r));
 			h2.weights.add(w);
 			for (int y = 0; y < 8; y++) { for (int x = 0; x < 8; x++) {
 				new Connection(
@@ -197,14 +198,14 @@ public class IdentifierNet {
 		// Connect h4 to output (full connection)
 		for (Node h4N : h4.nodes) {
 			for (Node oN : output.nodes) {
-				Weight w = new Weight(rnd(-2.0f / 193, 2.0f / 193));
+				Weight w = new Weight(rnd(-2.0f / 193, 2.0f / 193, r));
 				h4.weights.add(w);
 				new Connection(h4N, oN, w);
 			}
 		}
 		// Add biases to output.
 		for (Node oN : output.nodes) {
-			Weight w = new Weight(rnd(-2.0f / 193, 2.0f / 193));
+			Weight w = new Weight(rnd(-2.0f / 193, 2.0f / 193, r));
 			h4.weights.add(w);
 			new Connection(biasN, oN, w);
 		}

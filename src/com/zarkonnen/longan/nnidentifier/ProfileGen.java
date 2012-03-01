@@ -1,5 +1,6 @@
 package com.zarkonnen.longan.nnidentifier;
 
+import java.util.Random;
 import com.zarkonnen.longan.nnidentifier.network.Network;
 import java.awt.Rectangle;
 import com.zarkonnen.longan.data.Letter;
@@ -32,7 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 import javax.imageio.ImageIO;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
@@ -226,7 +226,6 @@ public class ProfileGen {
 	
 	public static void generate(Config config, int iters) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 		generateTargets(config);
-		Random r = new Random();
 		for (Config.Identifier identifier : config.identifiers) {
 			if (identifier instanceof Config.NNIdentifier) {
 				Config.NNIdentifier id = (Config.NNIdentifier) identifier;
@@ -235,13 +234,14 @@ public class ProfileGen {
 					System.out.println("Training network #" + i + " for " + identifier);
 					ArrayList<Config.LetterClass> classes = new ArrayList<Config.LetterClass>(identifier.classes);
 					//boolean twoClasses = classes.size() == 2;
-					Network nw = new IdentifierNet().nw;// qqDPS(twoClasses ? new DiscriminatorNet().nw : new IdentifierNet().nw);
+					Network nw = new IdentifierNet(id.seed).nw;// qqDPS(twoClasses ? new DiscriminatorNet().nw : new IdentifierNet().nw);
+					Random r = new Random(id.seed);
 					for (int pass = 0; pass < numPasses; pass++) {
 						Collections.shuffle(classes);
 						for (Config.LetterClass lc : classes) {
 							for (Config.FontType ft : identifier.fonts) {
 								String exL = lc.members.get(r.nextInt(lc.members.size()));
-								float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft), id.proportionalInput);
+								float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft, r), id.proportionalInput);
 								Example ex = new Example(
 										exL,
 										input,

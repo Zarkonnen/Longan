@@ -19,9 +19,7 @@ public class Util {
 		return 1.0f - y * y;
 	}
 	
-	public static final Random random = new Random();
-
-	public static float rnd(float from, float to) { return (to - from) * random.nextFloat() + from; }
+	public static float rnd(float from, float to, Random r) { return (to - from) * r.nextFloat() + from; }
 	
 	public static float[] getInputForNN(BufferedImage src, boolean proportional) {
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
