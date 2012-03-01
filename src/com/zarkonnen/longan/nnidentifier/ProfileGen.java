@@ -29,6 +29,7 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -97,6 +98,31 @@ public class ProfileGen {
 		generateTargets(config);
 		for (Config.Identifier identifier : config.identifiers) {
 			try {
+				// qqDPS
+				HashMap<Config.LetterClass, ArrayList<float[]>> targets = new HashMap<Config.LetterClass, ArrayList<float[]>>();
+				if (identifier instanceof Config.NNIdentifier) {
+					Random r = new Random(identifier.seed + 102910);
+					Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
+					for (Config.LetterClass lc : identifier.classes) {
+						ArrayList<float[]> ts = new ArrayList<float[]>();
+						ts.addAll(Arrays.asList(lc.targets));
+						targets.put(lc, ts);
+						for (int i = 0; i < 10; i++) {
+							for (String l : lc.members) {
+								for (Config.FontType ft : id.fonts) {
+									float[] t = id.fastNetworks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
+									//System.out.println(Arrays.toString(t));
+									float[] t2 = new float[t.length];
+									System.arraycopy(t, 0, t2, 0, t.length);
+									ts.add(t2);
+								}
+							}
+						}
+					}
+				}
+				// qqDPS
+				
+				
 				System.out.println();
 				System.out.println("Testing " + identifier);
 				int misses = 0;
@@ -135,17 +161,29 @@ public class ProfileGen {
 									for (int i = 0; i < id.numberOfNetworks; i++) {
 										float[] output = id.fastNetworks.get(i).run(input);
 										for (Config.LetterClass cmpLC : identifier.classes) {
-											/*System.out.println(l);
-											System.out.println(Arrays.toString(output));
-											System.out.println(cmpLC);
-											System.out.println(Arrays.toString(cmpLC.targets[i]));*/
-											double score = Identifier.score(output, cmpLC.targets[i]);
-											//System.out.println(l + " as " + cmpLC + " " + score);
-											//System.out.println();
-											if (!scores.containsKey(cmpLC)) {
-												scores.put(cmpLC, score);
-											} else {
-												scores.put(cmpLC, scores.get(cmpLC) + score);
+											for (float[] target : targets.get(cmpLC)) {
+												double score = Identifier.score(output, target);
+												if (!scores.containsKey(cmpLC)) {
+													scores.put(cmpLC, score);
+												} else {
+													scores.put(cmpLC, Math.max(scores.get(cmpLC), score));
+												}
+											}
+											if (2 * 2 == 5) { // qqDPS CLASSY!
+												/*System.out.println(l);
+												System.out.println(Arrays.toString(output));
+												System.out.println(cmpLC);
+												System.out.println(Arrays.toString(cmpLC.targets[i]));*/
+												System.out.println(Arrays.toString(output));
+												System.out.println(Arrays.toString(cmpLC.targets[i]));
+												double score = Identifier.score(output, cmpLC.targets[i]);
+												//System.out.println(l + " as " + cmpLC + " " + score);
+												//System.out.println();
+												if (!scores.containsKey(cmpLC)) {
+													scores.put(cmpLC, score);
+												} else {
+													scores.put(cmpLC, scores.get(cmpLC) + score);
+												}
 											}
 										}
 									}
