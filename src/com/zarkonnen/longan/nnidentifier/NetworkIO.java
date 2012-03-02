@@ -59,8 +59,8 @@ public class NetworkIO {
 		}
 	}
 	
-	static void readRelativeSizeInfo(Config.NNIdentifier id, InputStream is) throws JSONException {
-		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is)));
+	static void readRelativeSizeInfo(Config.NNIdentifier id, InputStream is) throws JSONException, UnsupportedEncodingException {
+		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is, "UTF-8")));
 		id.expectedRelativeSizes = new HashMap<String, Double>();
 		JSONArray keys = o.names();
 		for (int i = 0; i < keys.length(); i++) {
@@ -76,8 +76,8 @@ public class NetworkIO {
 		os.write(o.toString(4).getBytes("UTF-8"));
 	}
 	
-	static void readAspectRatioInfo(Config.NNIdentifier id, InputStream is) throws JSONException {
-		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is)));
+	static void readAspectRatioInfo(Config.NNIdentifier id, InputStream is) throws JSONException, UnsupportedEncodingException {
+		JSONObject o = new JSONObject(new JSONTokener(new InputStreamReader(is, "UTF-8")));
 		id.expectedAspectRatios = new HashMap<String, Double>();
 		JSONArray keys = o.names();
 		for (int i = 0; i < keys.length(); i++) {

@@ -3,11 +3,8 @@ package com.zarkonnen.longan.nnidentifier.network;
 import com.zarkonnen.longan.data.Letter;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.awt.RenderingHints;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
 import java.util.Random;
 
 public class Util {
@@ -21,7 +18,9 @@ public class Util {
 		return 1.0f - y * y;
 	}
 	
-	public static float rnd(float from, float to, Random r) { return (to - from) * r.nextFloat() + from; }
+	public static float rnd(float from, float to, Random r) {
+		return (to - from) * r.nextFloat() + from;
+	}
 	
 	public static BufferedImage convertInputToImg(float[] in) {
 		int sz = (int) Math.sqrt(in.length);
@@ -72,7 +71,7 @@ public class Util {
 	public static float[] getTargetForNN(BufferedImage src, boolean proportional) {
 		BufferedImage scaledSrc = new BufferedImage(16, 8, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = scaledSrc.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 16, 8);
 		int width = 0;
@@ -108,7 +107,7 @@ public class Util {
 	public static float[] getInputForNN(BufferedImage src, boolean proportional) {
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = scaledSrc.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 28, 28);
 		int width = 0;
@@ -145,7 +144,7 @@ public class Util {
 		// Masking
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = maskedSrc.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		g.drawImage(
 				src,
 				0, 0,
@@ -172,7 +171,7 @@ public class Util {
 		src = maskedSrc;
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
 		g = scaledSrc.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 28, 28);
 		int width = 0;

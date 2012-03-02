@@ -24,6 +24,14 @@ public class Network {
 		return nCut / nConns;
 	}
 	
+	public void train(float[] input, float[] target, float[] n, float[] m) {
+		setInput(input);
+		update();
+		setTargets(target);
+		calculateDelta();
+		adjustWeights(n, m);
+	}
+	
 	public void train(float[] input, float[] target, float n, float m) {
 		setInput(input);
 		update();
@@ -68,6 +76,12 @@ public class Network {
 	public void adjustWeights(float n, float m) {
 		for (int i = layers.size() - 1; i >= 0; i--) {
 			layers.get(i).adjustWeights(n, m);
+		}
+	}
+	
+	public void adjustWeights(float[] n, float[] m) {
+		for (int i = layers.size() - 1; i >= 0; i--) {
+			layers.get(i).adjustWeights(n[i], m[i]);
 		}
 	}
 	

@@ -1,7 +1,5 @@
 package com.zarkonnen.longan.nnidentifier;
 
-import java.util.Comparator;
-import java.awt.Point;
 import java.util.Random;
 import com.zarkonnen.longan.nnidentifier.network.Network;
 import java.awt.Rectangle;
@@ -31,7 +29,6 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -232,6 +229,7 @@ public class ProfileGen {
 					System.out.println("Training network #" + i + " for " + identifier);
 					ArrayList<Config.LetterClass> classes = new ArrayList<Config.LetterClass>(identifier.classes);
 					//boolean twoClasses = classes.size() == 2;
+					Visualizer.VisFrame vf = new Visualizer.VisFrame();
 					Network nw = new IdentifierNet(id.seed).nw;// qqDPS(twoClasses ? new DiscriminatorNet().nw : new IdentifierNet().nw);
 					Random r = new Random(id.seed);
 					for (int pass = 0; pass < numPasses; pass++) {
@@ -246,7 +244,9 @@ public class ProfileGen {
 										id.targets.get(i).get(lc).get(0));  
 								nw.train(ex.input, ex.target, N, M);
 							}
+							vf.update(nw, pass);
 						}
+						Visualizer.saveFrame(nw, pass);
 						if (pass % 10 == 0) { System.out.println(pass + "/" + numPasses); }
 						// Half of the way through, adjust the targets.
 						if (pass == numPasses / 2 || pass == numPasses * 3 / 4) {
@@ -274,6 +274,7 @@ public class ProfileGen {
 						}
 					}
 					id.networks.add(nw);
+					vf.dispose();
 				}
 				extendTargets(id, new Random(id.seed));
 			}
@@ -442,10 +443,17 @@ public class ProfileGen {
 			HashMap<Config.LetterClass, ArrayList<float[]>> ts = id.targets.get(n);
 			for (Config.LetterClass lc : id.classes) {
 				ArrayList<float[]> lcTargets = ts.get(lc);
-				for (int i = 0; i < 8; i++) {
+				for (int i = 0; i < 24; i++) {
 					for (String l : lc.members) {
 						for (Config.FontType ft : id.fonts) {
-							float[] t = id.networks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
+							float[] t = null;
+							if (id.networks.size() > 0) {
+								t = id.networks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
+							} else {
+								t = new float[OUTPUT_SIZE];
+								float[] t2 = id.fastNetworks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
+								System.arraycopy(t2, 0, t, 0, OUTPUT_SIZE);
+							}
 							lcTargets.add(t);
 						}
 					}
