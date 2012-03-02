@@ -38,6 +38,7 @@ public class Config {
 	public static class NNIdentifier extends Identifier {
 		public ArrayList<Network> networks = new ArrayList<Network>();
 		public ArrayList<FastLoadingNetwork> fastNetworks = new ArrayList<FastLoadingNetwork>();
+		public ArrayList<HashMap<LetterClass, ArrayList<float[]>>> targets = new ArrayList<HashMap<LetterClass, ArrayList<float[]>>>();
 		public int numberOfNetworks;
 		public boolean proportionalInput = true;
 		
@@ -173,7 +174,6 @@ public class Config {
 	
 	public static class LetterClass {
 		public ArrayList<String> members = new ArrayList<String>();
-		public float[][] targets;
 		@Override
 		public boolean equals(Object o) {
 			return o instanceof LetterClass && ((LetterClass) o).members.equals(members);

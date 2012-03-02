@@ -33,13 +33,11 @@ public class Identifier implements LetterIdentifier {
 	
 	public Identifier(Config config) throws NoSuchAlgorithmException, UnsupportedEncodingException {
 		this.config = config;
-		ProfileGen.generateTargets(config);
 	}
 	
 	public Identifier() {
 		try {
 			config = NetworkIO.readDefaultArchive();
-			ProfileGen.generateTargets(config);
 		} catch (Exception e) {
 			throw new RuntimeException("Could not initialise default neural network identifier.", e);
 		}
@@ -186,15 +184,17 @@ public class Identifier implements LetterIdentifier {
 					float[] output = id.fastNetworks.get(i).run(id.proportionalInput
 							? proportionalInput : squareInput);
 					for (Config.LetterClass lc : identifier.classes) {
-						double score = score(output, lc.targets[i]);
-						double newScore =
-								i == 0
-								? (score / id.numberOfNetworks)
-								: (scores.get(lc.members) + score / id.numberOfNetworks);
-						scores.put(lc.members, newScore);
-						if (newScore > bestScore) {
-							bestScore = newScore;
-							identifierVote = identifier;
+						for (float[] target : id.targets.get(i).get(lc)) {
+							double score = score(output, target);
+							double newScore =
+									i == 0
+									? (score / id.numberOfNetworks)
+									: (scores.get(lc.members) + score / id.numberOfNetworks);
+							scores.put(lc.members, newScore);
+							if (newScore > bestScore) {
+								bestScore = newScore;
+								identifierVote = identifier;
+							}
 						}
 					}
 				}
@@ -274,11 +274,15 @@ public class Identifier implements LetterIdentifier {
 							}
 							float[] output = id.fastNetworks.get(i).run(input);
 							for (Config.LetterClass lc : identifier.classes) {
-								double score = score(output, lc.targets[i]);
+								double lcBestScore = -1;
+								for (float[] target : id.targets.get(i).get(lc)) {
+									double score = score(output, target);
+									lcBestScore = Math.max(lcBestScore, score);
+								}
 								double newScore =
 									i == 0
-									? (score / id.numberOfNetworks)
-									: (scores.get(lc.members) + score / id.numberOfNetworks);
+									? (lcBestScore / id.numberOfNetworks)
+									: (scores.get(lc.members) + lcBestScore / id.numberOfNetworks);
 								scores.put(lc.members, newScore);
 								ArrayList<String> cl = new ArrayList<String>(lc.members);
 								cl.removeAll(dismissed);

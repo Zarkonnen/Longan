@@ -2,10 +2,12 @@ package com.zarkonnen.longan.nnidentifier.network;
 
 import com.zarkonnen.longan.data.Letter;
 import java.awt.Color;
-import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.util.Random;
 
 public class Util {
@@ -21,9 +23,92 @@ public class Util {
 	
 	public static float rnd(float from, float to, Random r) { return (to - from) * r.nextFloat() + from; }
 	
+	public static BufferedImage convertInputToImg(float[] in) {
+		int sz = (int) Math.sqrt(in.length);
+		int w = sz;
+		int h = sz;
+		if (sz * sz != in.length) {
+			w = ((int) Math.sqrt(in.length / 2)) * 2;
+			h = ((int) Math.sqrt(in.length / 2));
+		}
+		BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		for (int y = 0; y < h; y++) { for (int x = 0; x < w; x++) {
+			int intensity = (int) ((in[y * w + x] + 1.0f) / 2.0f * 255.0f);
+			intensity = Math.max(0, Math.min(255, intensity));
+			Color c = new Color(intensity, intensity, intensity);
+			img.setRGB(x, y, c.getRGB());
+		} }
+		BufferedImage img2 = new BufferedImage(w * 10, h * 10, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+		g.drawImage(img, 0, 0, w * 10, h * 10, null);
+		return img2;
+	}
+	
+	public static BufferedImage convertInputToImg(float[][] in) {
+		BufferedImage img = new BufferedImage(in[0].length, in.length, BufferedImage.TYPE_INT_RGB);
+		for (int y = 0; y < in.length; y++) { for (int x = 0; x < in[0].length; x++) {
+			int intensity = (int) ((in[y][x] + 1.0f) / 2.0f * 255.0f);
+			intensity = Math.max(0, Math.min(255, intensity));
+			Color c = new Color(intensity, intensity, intensity);
+			img.setRGB(x, y, c.getRGB());
+		} }
+		BufferedImage img2 = new BufferedImage(in[0].length * 10, in.length * 10, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = img2.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+		g.drawImage(img, 0, 0, in[0].length * 10, in.length * 10, null);
+		return img2;
+	}
+	
+	public static float[] convertImgToInput(BufferedImage src) {
+		float[] result = new float[src.getWidth() * src.getHeight()];
+		for (int y = 0; y < src.getHeight(); y++) { for (int x = 0; x < src.getWidth(); x++) {
+			Color c = new Color(src.getRGB(x, y));
+			result[y * src.getWidth() + x] = (c.getRed() + c.getGreen() + c.getBlue()) / 255.0f / 1.5f - 1;
+		} }
+		return result;
+	}
+	
+	public static float[] getTargetForNN(BufferedImage src, boolean proportional) {
+		BufferedImage scaledSrc = new BufferedImage(16, 8, BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = scaledSrc.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+		g.setColor(Color.WHITE);
+		g.fillRect(0, 0, 16, 8);
+		int width = 0;
+		int xOffset = 0;
+		int height = 0;
+		int yOffset = 0;
+		if (proportional) {
+			if (src.getWidth() > src.getHeight()) {
+				width = 16;
+				height = 8 * src.getHeight() / src.getWidth();
+				yOffset = (8 - height) / 2;
+			} else {
+				height = 8;
+				width = 16 * src.getWidth() / src.getHeight();
+				xOffset = (16 - width) / 2;
+			}
+		} else {
+			width  = 16;
+			height = 8;
+			xOffset = 0;
+			yOffset = 0;
+		}
+		g.drawImage(src, xOffset, yOffset, xOffset + width, yOffset + height, null);
+		src = scaledSrc;
+		float[] result = new float[16 * 8];
+		for (int y = 0; y < 8; y++) { for (int x = 0; x < 16; x++) {
+			Color c = new Color(src.getRGB(x, y));
+			result[y * 16 + x] = (c.getRed() + c.getGreen() + c.getBlue()) / 255.0f / 1.5f - 1;
+		} }
+		return result;
+	}
+	
 	public static float[] getInputForNN(BufferedImage src, boolean proportional) {
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
-		Graphics g = scaledSrc.getGraphics();
+		Graphics2D g = scaledSrc.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 28, 28);
 		int width = 0;
@@ -56,41 +141,11 @@ public class Util {
 		return result;
 	}
 	
-	public static BufferedImage convertInputToImg(float[] in) {
-		int sz = (int) Math.sqrt(in.length);
-		BufferedImage img = new BufferedImage(sz, sz, BufferedImage.TYPE_INT_RGB);
-		for (int y = 0; y < sz; y++) { for (int x = 0; x < sz; x++) {
-			int intensity = (int) ((in[y * sz + x] + 1.0f) / 2.0f * 255.0f);
-			intensity = Math.max(0, Math.min(255, intensity));
-			Color c = new Color(intensity, intensity, intensity);
-			img.setRGB(x, y, c.getRGB());
-		} }
-		BufferedImage img2 = new BufferedImage(sz * 10, sz * 10, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g = img2.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-		g.drawImage(img, 0, 0, sz * 10, sz * 10, null);
-		return img;
-	}
-	
-	public static BufferedImage convertInputToImg(float[][] in) {
-		BufferedImage img = new BufferedImage(in[0].length, in.length, BufferedImage.TYPE_INT_RGB);
-		for (int y = 0; y < in.length; y++) { for (int x = 0; x < in[0].length; x++) {
-			int intensity = (int) ((in[y][x] + 1.0f) / 2.0f * 255.0f);
-			intensity = Math.max(0, Math.min(255, intensity));
-			Color c = new Color(intensity, intensity, intensity);
-			img.setRGB(x, y, c.getRGB());
-		} }
-		BufferedImage img2 = new BufferedImage(in[0].length * 10, in.length * 10, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g = img2.createGraphics();
-		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-		g.drawImage(img, 0, 0, in[0].length * 10, in.length * 10, null);
-		return img2;
-	}
-	
 	public static float[] getInputForNN(Letter r, BufferedImage src, int intensityAdjustment, boolean proportional) {
 		// Masking
 		BufferedImage maskedSrc = new BufferedImage(r.width, r.height, BufferedImage.TYPE_INT_RGB);
-		Graphics g = maskedSrc.getGraphics();
+		Graphics2D g = maskedSrc.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 		g.drawImage(
 				src,
 				0, 0,
@@ -116,7 +171,8 @@ public class Util {
 		}
 		src = maskedSrc;
 		BufferedImage scaledSrc = new BufferedImage(28, 28, BufferedImage.TYPE_INT_RGB);
-		g = scaledSrc.getGraphics();
+		g = scaledSrc.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 28, 28);
 		int width = 0;

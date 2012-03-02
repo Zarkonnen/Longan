@@ -13,6 +13,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -107,6 +108,47 @@ public class NetworkIO {
 		os.write(o.toString(4).getBytes("UTF-8"));
 	}
 	
+	static void writeTargets(Config.NNIdentifier id, int n, OutputStream os) throws IOException {
+		ObjectOutputStream oos = new ObjectOutputStream(os);
+		oos.writeInt(1); // version
+		oos.writeInt(id.classes.size());
+		for (Config.LetterClass lc : id.classes) {
+			ArrayList<float[]> targets = id.targets.get(n).get(lc);
+			oos.writeInt(targets.size());
+			for (float[] t : targets) {
+				for (int i = 0; i < t.length; i++) {
+					oos.writeFloat(t[i]);
+				}
+			}
+		}
+		oos.flush();
+	}
+	
+	static void readTargets(Config.NNIdentifier id, InputStream is) throws IOException {
+		ObjectInputStream ois = new ObjectInputStream(is);
+		if (ois.readInt() != 1) {
+			throw new IOException("Unknown network targets version!");
+		}
+		int nClasses = ois.readInt();
+		if (nClasses != id.classes.size()) {
+			throw new IOException("Network targets file is incompatible with its identifier: wrong number of classes.");
+		}
+		HashMap<Config.LetterClass, ArrayList<float[]>> nnTargets = new HashMap<Config.LetterClass, ArrayList<float[]>>();
+		id.targets.add(nnTargets);
+		for (Config.LetterClass lc : id.classes) {
+			ArrayList<float[]> targets = new ArrayList<float[]>();
+			nnTargets.put(lc, targets);
+			int nTargets = ois.readInt();
+			for (int t = 0; t < nTargets; t++) {
+				float[] target = new float[ProfileGen.OUTPUT_SIZE];
+				for (int i = 0; i < target.length; i++) {
+					target[i] = ois.readFloat();
+				}
+				targets.add(target);
+			}
+		}
+	}
+	
 	public static Config readDefaultArchive() throws ZipException, IOException, JSONException {
 		loadNetworkShapes();
 		Config c = new Config(new JSONObject(new JSONTokener(new InputStreamReader(NetworkIO.class.getResourceAsStream("data/source.json"), "UTF-8"))));
@@ -121,6 +163,7 @@ public class NetworkIO {
 					FastLoadingNetwork fln = identifierTemplate.cloneWithSameShape();
 					fln.loadWeights(NetworkIO.class.getResourceAsStream("data/" + name + "_weights_" + i));
 					id.fastNetworks.add(fln);
+					readTargets(id, NetworkIO.class.getResourceAsStream("data/" + name + "_targets_" + i));
 				}
 				readRelativeSizeInfo(id, NetworkIO.class.getResourceAsStream("data/" + name + "_sizes.json"));
 				readAspectRatioInfo(id, NetworkIO.class.getResourceAsStream("data/" + name + "_aspectRatios.json"));
@@ -170,6 +213,8 @@ public class NetworkIO {
 						fln.loadWeights(
 								zf.getInputStream(new ZipEntry(baseName + "_weights_" + i)));
 						identifier.fastNetworks.add(fln);
+						readTargets(identifier,
+								zf.getInputStream(new ZipEntry(baseName + "_targets_" + i)));
 					}
 					c.identifiers.add(identifier);
 					readRelativeSizeInfo(identifier,
@@ -215,9 +260,11 @@ public class NetworkIO {
 			zos.write(identifier.toJSON().toString(4).getBytes("UTF-8"));
 			if (identifier instanceof Config.NNIdentifier) {
 				Config.NNIdentifier id = (Config.NNIdentifier) identifier;
-				for (int i = 0; i < id.numberOfNetworks; i++) {
-					zos.putNextEntry(new ZipEntry(name + "_weights_" + i));
-					new FastLoadingNetwork().initFromNetwork(id.networks.get(i)).saveWeights(zos);
+				for (int n = 0; n < id.numberOfNetworks; n++) {
+					zos.putNextEntry(new ZipEntry(name + "_weights_" + n));
+					new FastLoadingNetwork().initFromNetwork(id.networks.get(n)).saveWeights(zos);
+					zos.putNextEntry(new ZipEntry(name + "_targets_" + n));
+					writeTargets(id, n, zos);
 				}
 				zos.putNextEntry(new ZipEntry(name + "_sizes.json"));
 				writeRelativeSizeInfo(id, zos);

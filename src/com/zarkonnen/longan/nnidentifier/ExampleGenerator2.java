@@ -59,7 +59,7 @@ public class ExampleGenerator2 {
 		g.setFont(new Font(font, italic ? Font.ITALIC : Font.PLAIN, 40));
 		g.setColor(Color.BLACK);
 		g.drawString(l, 50, 50);
-		return crop(img, 127, new int[] { 0, 0, 0, 0 });
+		return crop(img, 127, new int[] { 0, 1, 0, 1 });
 	}
 	
 	static BufferedImage weaksauculate(BufferedImage img, int color) {

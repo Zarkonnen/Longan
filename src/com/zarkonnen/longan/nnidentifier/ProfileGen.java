@@ -1,5 +1,7 @@
 package com.zarkonnen.longan.nnidentifier;
 
+import java.util.Comparator;
+import java.awt.Point;
 import java.util.Random;
 import com.zarkonnen.longan.nnidentifier.network.Network;
 import java.awt.Rectangle;
@@ -95,34 +97,8 @@ public class ProfileGen {
 	
 	static int q;
 	public static void testNetworks(Config config, File imageFolder) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
-		generateTargets(config);
 		for (Config.Identifier identifier : config.identifiers) {
 			try {
-				// qqDPS
-				HashMap<Config.LetterClass, ArrayList<float[]>> targets = new HashMap<Config.LetterClass, ArrayList<float[]>>();
-				if (identifier instanceof Config.NNIdentifier) {
-					Random r = new Random(identifier.seed + 102910);
-					Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
-					for (Config.LetterClass lc : identifier.classes) {
-						ArrayList<float[]> ts = new ArrayList<float[]>();
-						//ts.addAll(Arrays.asList(lc.targets));
-						targets.put(lc, ts);
-						for (int i = 0; i < 10; i++) {
-							for (String l : lc.members) {
-								for (Config.FontType ft : id.fonts) {
-									float[] t = id.fastNetworks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
-									//System.out.println(Arrays.toString(t));
-									float[] t2 = new float[t.length];
-									System.arraycopy(t, 0, t2, 0, t.length);
-									ts.add(t2);
-								}
-							}
-						}
-					}
-				}
-				// qqDPS
-				
-				
 				System.out.println();
 				System.out.println("Testing " + identifier);
 				int misses = 0;
@@ -161,28 +137,12 @@ public class ProfileGen {
 									for (int i = 0; i < id.numberOfNetworks; i++) {
 										float[] output = id.fastNetworks.get(i).run(input);
 										for (Config.LetterClass cmpLC : identifier.classes) {
-											for (float[] target : targets.get(cmpLC)) {
+											for (float[] target : id.targets.get(i).get(cmpLC)) {
 												double score = Identifier.score(output, target);
 												if (!scores.containsKey(cmpLC)) {
 													scores.put(cmpLC, score);
 												} else {
 													scores.put(cmpLC, Math.max(scores.get(cmpLC), score));
-												}
-											}
-											if (2 * 2 == 5) { // qqDPS CLASSY!
-												/*System.out.println(l);
-												System.out.println(Arrays.toString(output));
-												System.out.println(cmpLC);
-												System.out.println(Arrays.toString(cmpLC.targets[i]));*/
-												System.out.println(Arrays.toString(output));
-												System.out.println(Arrays.toString(cmpLC.targets[i]));
-												double score = Identifier.score(output, cmpLC.targets[i]);
-												//System.out.println(l + " as " + cmpLC + " " + score);
-												//System.out.println();
-												if (!scores.containsKey(cmpLC)) {
-													scores.put(cmpLC, score);
-												} else {
-													scores.put(cmpLC, scores.get(cmpLC) + score);
 												}
 											}
 										}
@@ -263,10 +223,10 @@ public class ProfileGen {
 	}
 	
 	public static void generate(Config config, int iters) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-		generateTargets(config);
 		for (Config.Identifier identifier : config.identifiers) {
 			if (identifier instanceof Config.NNIdentifier) {
 				Config.NNIdentifier id = (Config.NNIdentifier) identifier;
+				generateTargets(id);
 				int numPasses = iters / identifier.fonts.size() / identifier.classes.size();
 				for (int i = 0; i < id.numberOfNetworks; i++) {
 					System.out.println("Training network #" + i + " for " + identifier);
@@ -283,7 +243,7 @@ public class ProfileGen {
 								Example ex = new Example(
 										exL,
 										input,
-										lc.targets[i]);
+										id.targets.get(i).get(lc).get(0));  
 								nw.train(ex.input, ex.target, N, M);
 							}
 						}
@@ -292,29 +252,30 @@ public class ProfileGen {
 						if (pass == numPasses / 2 || pass == numPasses * 3 / 4) {
 							System.out.println("Adjusting targets.");
 							for (Config.LetterClass lc : classes) {
-								System.out.println(lc);
+								/*System.out.println(lc);
 								System.out.println("Original:");
-								System.out.println(Arrays.toString(lc.targets[i]));
+								System.out.println(Arrays.toString(lc.targets[i]));*/
 								float[] newTarget = new float[OUTPUT_SIZE];
-								for (int e = 0; e < 64; e++) {
+								for (int e = 0; e < 32; e++) {
 									for (Config.FontType ft : identifier.fonts) {
 										String exL = lc.members.get(r.nextInt(lc.members.size()));
 										float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft, r), id.proportionalInput);
 										float[] output = nw.run(input);
 										//System.out.println(Arrays.toString(output));
 										for (int z = 0; z < OUTPUT_SIZE; z++) {
-											newTarget[z] += (output[z] / (64 * identifier.fonts.size()));
+											newTarget[z] += (output[z] / (32 * identifier.fonts.size()));
 										}
 									}
 								}
-								System.out.println("New:");
-								System.out.println(Arrays.toString(newTarget));
-								lc.targets[i] = newTarget;
+								/*System.out.println("New:");
+								System.out.println(Arrays.toString(newTarget));*/
+								id.targets.get(i).get(lc).set(0, newTarget);
 							}
 						}
 					}
 					id.networks.add(nw);
 				}
+				extendTargets(id, new Random(id.seed));
 			}
 			if (identifier instanceof Config.NumberOfPartsIdentifier) {
 				System.out.println("Determining number of parts for " + identifier);
@@ -476,32 +437,41 @@ public class ProfileGen {
 		}
 	}
 	
-	public static void generateTargets(Config config) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-		MessageDigest md = MessageDigest.getInstance("MD5");
-		for (Config.Identifier identifier : config.identifiers) {
-			int nNetworks = (identifier instanceof Config.NNIdentifier) ? ((Config.NNIdentifier) identifier).numberOfNetworks : 1;
-			//boolean twoClasses = identifier.classes.size() == 2;
-			for (Config.LetterClass lc : identifier.classes) {
-				/*if (twoClasses) {
-					lc.targets = new float[nNetworks][1];
-					for (int n = 0; n < nNetworks; n++) {
-						lc.targets[n][0] = identifier.classes.indexOf(lc);
-					}
-				} else {*/
-					lc.targets = new float[nNetworks][0];
-					for (int n = 0; n < nNetworks; n++) {
-						String hashable = lc.toString() + n;
-						byte[] digest = md.digest(hashable.getBytes("UTF-8"));
-						float[] data = new float[OUTPUT_SIZE];
-						for (int i = 0; i < 16; i++) {
-							for (int j = 0; j < 8; j++) {
-								//data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 1.0f : 0f; // qqDPS
-								data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 0.8f : -0.8f;
-							}
+	public static void extendTargets(Config.NNIdentifier id, Random r) {
+		for (int n = 0; n < id.numberOfNetworks; n++) {
+			HashMap<Config.LetterClass, ArrayList<float[]>> ts = id.targets.get(n);
+			for (Config.LetterClass lc : id.classes) {
+				ArrayList<float[]> lcTargets = ts.get(lc);
+				for (int i = 0; i < 8; i++) {
+					for (String l : lc.members) {
+						for (Config.FontType ft : id.fonts) {
+							float[] t = id.networks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
+							lcTargets.add(t);
 						}
-						lc.targets[n] = data;
 					}
-				//}
+				}
+			}
+		}
+	}
+	
+	public static void generateTargets(Config.NNIdentifier id) throws NoSuchAlgorithmException, UnsupportedEncodingException {
+		MessageDigest md = MessageDigest.getInstance("MD5");
+		for (int n = 0; n < id.numberOfNetworks; n++) {
+			HashMap<Config.LetterClass, ArrayList<float[]>> ts = new HashMap<Config.LetterClass, ArrayList<float[]>>();
+			id.targets.add(ts);
+			for (Config.LetterClass lc : id.classes) {
+				String hashable = lc.toString() + n;
+				byte[] digest = md.digest(hashable.getBytes("UTF-8"));
+				float[] target = new float[OUTPUT_SIZE];
+				for (int i = 0; i < 16; i++) {
+					for (int j = 0; j < 8; j++) {
+						//data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 1.0f : 0f; // qqDPS
+						target[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 0.85f : -0.85f;
+					}
+				}
+				ArrayList<float[]> singleTarget = new ArrayList<float[]>();
+				singleTarget.add(target);
+				ts.put(lc, singleTarget);
 			}
 		}
 	}
