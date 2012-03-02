@@ -105,7 +105,7 @@ public class ProfileGen {
 					Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
 					for (Config.LetterClass lc : identifier.classes) {
 						ArrayList<float[]> ts = new ArrayList<float[]>();
-						ts.addAll(Arrays.asList(lc.targets));
+						//ts.addAll(Arrays.asList(lc.targets));
 						targets.put(lc, ts);
 						for (int i = 0; i < 10; i++) {
 							for (String l : lc.members) {
@@ -288,6 +288,30 @@ public class ProfileGen {
 							}
 						}
 						if (pass % 10 == 0) { System.out.println(pass + "/" + numPasses); }
+						// Half of the way through, adjust the targets.
+						if (pass == numPasses / 2 || pass == numPasses * 3 / 4) {
+							System.out.println("Adjusting targets.");
+							for (Config.LetterClass lc : classes) {
+								System.out.println(lc);
+								System.out.println("Original:");
+								System.out.println(Arrays.toString(lc.targets[i]));
+								float[] newTarget = new float[OUTPUT_SIZE];
+								for (int e = 0; e < 64; e++) {
+									for (Config.FontType ft : identifier.fonts) {
+										String exL = lc.members.get(r.nextInt(lc.members.size()));
+										float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft, r), id.proportionalInput);
+										float[] output = nw.run(input);
+										//System.out.println(Arrays.toString(output));
+										for (int z = 0; z < OUTPUT_SIZE; z++) {
+											newTarget[z] += (output[z] / (64 * identifier.fonts.size()));
+										}
+									}
+								}
+								System.out.println("New:");
+								System.out.println(Arrays.toString(newTarget));
+								lc.targets[i] = newTarget;
+							}
+						}
 					}
 					id.networks.add(nw);
 				}
@@ -471,7 +495,8 @@ public class ProfileGen {
 						float[] data = new float[OUTPUT_SIZE];
 						for (int i = 0; i < 16; i++) {
 							for (int j = 0; j < 8; j++) {
-								data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 1.0f : 0f;
+								//data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 1.0f : 0f; // qqDPS
+								data[i * 8 + j] = ((digest[i] >>> j) & 1) == 1 ? 0.8f : -0.8f;
 							}
 						}
 						lc.targets[n] = data;
