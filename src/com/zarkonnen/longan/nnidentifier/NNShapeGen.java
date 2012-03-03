@@ -10,8 +10,8 @@ public class NNShapeGen {
 		FileOutputStream fos = new FileOutputStream(new File(args[0]));
 		new FastLoadingNetwork().initFromNetwork(new IdentifierNet(0).nw).saveShape(fos);
 		fos.close();
-		fos = new FileOutputStream(new File(args[1]));
+		/*fos = new FileOutputStream(new File(args[1]));
 		new FastLoadingNetwork().initFromNetwork(new DiscriminatorNet(0).nw).saveShape(fos);
-		fos.close();
+		fos.close();*/
 	}
 }

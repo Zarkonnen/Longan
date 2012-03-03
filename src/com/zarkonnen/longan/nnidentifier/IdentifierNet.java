@@ -123,9 +123,9 @@ public class IdentifierNet {
 		boolean[][] table = {
 			{X, O, O, O, X, X, X, O, O, X, X, X, X, O, X, X},
 			{X, X, O, O, O, X, X, X, O, O, X, X, X, X, O, X},
-			{X, X, X, O, O, O, X, X, X, O, O, X, O, X, X, X},
-			{O, X, X, X, O, O, X, X, X, X, O, O, X, O, X, X},
-			{O, O, X, X, X, O, O, X, X, X, X, O, X, X, O, X},
+			{X, X, X, O, O, O, X, X, X, O, O, X, X, X, X, O},
+			{O, X, X, X, O, O, X, X, X, X, O, O, X, X, X, X},
+			{O, O, X, X, X, O, O, X, X, X, X, O, X, X, X, X},
 			{O, O, O, X, X, X, O, O, X, X, X, X, O, X, X, X}
 		};
 		
