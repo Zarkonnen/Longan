@@ -47,7 +47,7 @@
         "Y",
         "!",
         "@",
-        "�",
+        "£",
         "$",
         "%",
         "&",
@@ -73,7 +73,7 @@
         "9"
     ],
     "root": true,
-    "seed": 314159,
+    "seed": 31415926,
     "sampleSentence": "The quick brown fox jumped over the lazy dog.",
     "type": "nnIdentifier",
     "fonts": [

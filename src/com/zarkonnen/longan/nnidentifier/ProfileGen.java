@@ -45,7 +45,7 @@ import static com.zarkonnen.longan.nnidentifier.network.Util.*;
 
 public class ProfileGen {
 	static final String INVOCATION = "java -jar profilegen.jar [OPTIONS] [INPUT FILE(S)]";
-	static final int DEFAULT_PASSES = 30000;
+	static final int DEFAULT_PASSES = 60000;
 	static final int OUTPUT_SIZE = 128;
 	static final float N = 0.002f;
 	static final float M = 0.0005f;
@@ -163,7 +163,11 @@ public class ProfileGen {
 									BufferedImage img = ImageIO.read(f);
 									int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
 									boolean aboveBoundary = n > id.numberOfPartsBoundary;
-									if (id.firstIsAboveBoundary != aboveBoundary) {
+									boolean shouldBeAboveBoundary =
+											identifier.classes.indexOf(lc) == 0
+											? id.firstIsAboveBoundary
+											: !id.firstIsAboveBoundary;
+									if (shouldBeAboveBoundary != aboveBoundary) {
 										misses++;
 										System.out.println(l + "(" + f.getName() + ") mis-identified.");
 									}

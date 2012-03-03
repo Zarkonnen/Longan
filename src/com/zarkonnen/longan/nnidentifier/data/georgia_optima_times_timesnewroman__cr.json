@@ -1,12 +1,12 @@
 {
     "classes": [
-        "b",
-        "h"
+        "c",
+        "r"
     ],
     "root": false,
     "seed": 31415926,
     "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-    "type": "treeIdentifier",
+    "type": "nearestNeighbourIdentifier",
     "fonts": [
         {
             "font": "Georgia",

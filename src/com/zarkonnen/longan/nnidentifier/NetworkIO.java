@@ -30,12 +30,10 @@ import org.json.JSONTokener;
 public class NetworkIO {
 	static boolean networksLoaded = false;
 	static FastLoadingNetwork identifierTemplate = new FastLoadingNetwork();
-	static FastLoadingNetwork discriminatorTemplate = new FastLoadingNetwork();
 		
 	static void loadNetworkShapes() throws IOException {
 		if (!networksLoaded) {
 			identifierTemplate.loadShape(NetworkIO.class.getResourceAsStream("identifier.lns"));
-			discriminatorTemplate.loadShape(NetworkIO.class.getResourceAsStream("discriminator.lns"));
 			networksLoaded = true;
 		}
 	}
