@@ -235,9 +235,9 @@ public class ProfileGen {
 					//boolean twoClasses = classes.size() == 2;
 					Visualizer.VisFrame vf = new Visualizer.VisFrame();
 					Network nw = new IdentifierNet(id.seed).nw;// qqDPS(twoClasses ? new DiscriminatorNet().nw : new IdentifierNet().nw);
-					Random r = new Random(id.seed);
+					Random r = new Random(id.seed + i * 293083);
 					for (int pass = 0; pass < numPasses; pass++) {
-						Collections.shuffle(classes);
+						Collections.shuffle(classes, r);
 						for (Config.LetterClass lc : classes) {
 							for (Config.FontType ft : identifier.fonts) {
 								String exL = lc.members.get(r.nextInt(lc.members.size()));
@@ -280,7 +280,7 @@ public class ProfileGen {
 					id.networks.add(nw);
 					vf.dispose();
 				}
-				extendTargets(id, new Random(id.seed));
+				// extendTargets(id, new Random(id.seed)); qqDPS This was a bad idea.
 			}
 			if (identifier instanceof Config.NumberOfPartsIdentifier) {
 				System.out.println("Determining number of parts for " + identifier);

@@ -56,6 +56,9 @@ public class Config {
 			json.put("proportionalInput", proportionalInput);
 			return json;
 		}
+		
+		@Override
+		public String toString() { return "Neural Network " + super.toString(); }
 	}
 	
 	public static class TreeIdentifier extends Identifier {
@@ -71,6 +74,9 @@ public class Config {
 			json.put("type", "treeIdentifier");
 			return json;
 		}
+		
+		@Override
+		public String toString() { return "Tree " + super.toString(); }
 	}
 	
 	public static class NearestNeighbourIdentifier extends Identifier {
@@ -86,6 +92,9 @@ public class Config {
 			json.put("type", "nearestNeighbourIdentifier");
 			return json;
 		}
+		
+		@Override
+		public String toString() { return "Nearest Neighbour " + super.toString(); }
 	}
 	
 	public static class NumberOfPartsIdentifier extends Identifier {
@@ -103,6 +112,9 @@ public class Config {
 			json.put("type", "numberOfPartsIdentifier");
 			return json;
 		}
+		
+		@Override
+		public String toString() { return "Number of Parts " + super.toString(); }
 	}
 	
 	public static abstract class Identifier {
