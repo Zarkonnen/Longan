@@ -50,13 +50,13 @@ public class Visualizer {
 	}
 	
 	public static void saveFrame(Network in, int pass) {
-		BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
+		/*BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_RGB);
 		visualize(img.getGraphics(), in, pass);
 		try {
 			ImageIO.write(img, "png", new File("/Users/zar/Desktop/film/" + pass + ".png"));
 		} catch (Exception e) {
 			e.printStackTrace();
-		}
+		}*/
 	}
 	
 	public static void visualize(Graphics g, Network in, int pass) {

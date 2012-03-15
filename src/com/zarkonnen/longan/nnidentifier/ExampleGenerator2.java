@@ -20,6 +20,16 @@ public class ExampleGenerator2 {
 				new int[] {1, 1, 1, 1}, r);
 	}
 	
+	public static BufferedImage makeSemiVariableLetterImage(String l, Config.FontType font, Random r) {
+		int intensity = r.nextInt(30);
+		int size = 30 + r.nextInt(40);
+		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
+				intensity, -Math.PI / 20 + r.nextDouble() * Math.PI / 10,
+				intensity + 160 + r.nextInt(50),
+				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
+				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)}, r);
+	}
+	
 	public static BufferedImage makeHighlyVariableLetterImage(String l, Config.FontType font, Random r) {
 		int intensity = r.nextInt(30);
 		int size = 10 + r.nextInt(90);

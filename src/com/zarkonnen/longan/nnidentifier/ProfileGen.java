@@ -57,14 +57,17 @@ public class ProfileGen {
 		Option generateO = OptionBuilder.withDescription("Generate set of neural network weights. Takes two file arguments: the source JSON file and the target zip.").withLongOpt("generate").create("g");
 		Option testO = OptionBuilder.withDescription("Test set of neural networks against images. Takes two file arguments: the zip of weights and a folder of images.").withLongOpt("test").create("t");
 		Option itersO = OptionBuilder.withDescription("Number of iterations to train the network(s) for.").withLongOpt("iters").hasArg().withArgName("iterations").create("i");
+		Option seedO = OptionBuilder.withDescription("Seed to use for testing.").withLongOpt("seed").hasArg().withArgName("seed").create("s");
 		options.addOption(helpO);
 		options.addOption(versionO);
 		options.addOption(generateO);
 		options.addOption(testO);
 		options.addOption(itersO);
+		options.addOption(seedO);
 		CommandLineParser clp = new GnuParser();
 		try {
 			CommandLine line = clp.parse(options, args);
+			long seed = System.currentTimeMillis();
 			if (line.hasOption("h")) {
 				new HelpFormatter().printHelp(INVOCATION, options);
 				System.exit(0);
@@ -72,6 +75,9 @@ public class ProfileGen {
 			if (line.hasOption("v")) {
 				System.out.println(Longan.VERSION);
 				System.exit(0);
+			}
+			if (line.hasOption("s")) {
+				seed = Long.parseLong(line.getOptionValue("s", seed + ""));
 			}
 			if (line.hasOption("g")) {
 				BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(new File((String) line.getArgList().get(0))), "UTF-8"));
@@ -83,7 +89,11 @@ public class ProfileGen {
 			if (line.hasOption("t")) {
 				long t = System.currentTimeMillis();
 				Config config = NetworkIO.readArchive(new File((String) line.getArgList().get(0)));
-				testNetworks(config, new File((String) line.getArgList().get(1)));
+				if (line.getArgList().size() == 1) {
+					testNetworks(config, seed);
+				} else {
+					testNetworks(config, new File((String) line.getArgList().get(1)));
+				}
 				System.out.println((System.currentTimeMillis() - t) + " ms");
 				System.exit(0);
 			}
@@ -91,6 +101,8 @@ public class ProfileGen {
 			e.printStackTrace();
 		}
 	}
+	
+	
 	
 	static int q;
 	public static void testNetworks(Config config, File imageFolder) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
@@ -100,6 +112,8 @@ public class ProfileGen {
 				System.out.println("Testing " + identifier);
 				int misses = 0;
 				int tests = 0;
+				Counter<Config.LetterClass> testCounts = new Counter<Config.LetterClass>();
+				Counter<ArrayList<Config.LetterClass>> errCounts = new Counter<ArrayList<Config.LetterClass>>();
 				for (Config.LetterClass lc : identifier.classes) {
 					for (String l : lc.members) {
 						File letterFolder = new File(imageFolder, letterToFilename(l));
@@ -127,87 +141,154 @@ public class ProfileGen {
 						for (File f : letterFolder.listFiles()) {
 							if (f.getName().endsWith(".png") && !doNotTest.contains(f.getName().substring(0, f.getName().length() - 4))) {
 								tests++;
-								if (identifier instanceof Config.NNIdentifier) {
-									Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
-									float[] input = Util.getInputForNN(ImageIO.read(f), id.proportionalInput);
-									HashMap<Config.LetterClass, Double> scores = new HashMap<Config.LetterClass, Double>();
-									for (int i = 0; i < id.numberOfNetworks; i++) {
-										float[] output = id.fastNetworks.get(i).run(input);
-										for (Config.LetterClass cmpLC : identifier.classes) {
-											for (float[] target : id.targets.get(i).get(cmpLC)) {
-												double score = Identifier.score(output, target);
-												if (!scores.containsKey(cmpLC)) {
-													scores.put(cmpLC, score);
-												} else {
-													scores.put(cmpLC, Math.max(scores.get(cmpLC), score));
-												}
-											}
-										}
-									}
-
-									Config.LetterClass bestLC = null;
-									double bestScore = 0;
-									for (Map.Entry<Config.LetterClass, Double> e : scores.entrySet()) {
-										if (bestLC == null || e.getValue() > bestScore) {
-											bestLC = e.getKey();
-											bestScore = e.getValue();
-										}
-									}
-									if (bestLC != lc) {
-										misses++;
-										System.out.println(l + "(" + f.getName() + ") mis-identified as " + bestLC);
-									}
-								}
-								if (identifier instanceof Config.NumberOfPartsIdentifier) {
-									Config.NumberOfPartsIdentifier id = (Config.NumberOfPartsIdentifier) identifier;
-									BufferedImage img = ImageIO.read(f);
-									int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
-									boolean aboveBoundary = n > id.numberOfPartsBoundary;
-									boolean shouldBeAboveBoundary =
-											identifier.classes.indexOf(lc) == 0
-											? id.firstIsAboveBoundary
-											: !id.firstIsAboveBoundary;
-									if (shouldBeAboveBoundary != aboveBoundary) {
-										misses++;
-										System.out.println(l + "(" + f.getName() + ") mis-identified.");
-									}
-								}
-								if (identifier instanceof Config.TreeIdentifier) {
-									Config.TreeIdentifier id = (Config.TreeIdentifier) identifier;
-									Config.LetterClass classification = TreePredict.vote(id.tree.classify(
-										TreePredict.getImg(ImageIO.read(f), null)));
-									if (!classification.equals(lc)) {
-										misses++;
-										System.out.println(l + "(" + f.getName() + ") mis-identified as " + classification);
-									}
-								}
-								if (identifier instanceof Config.NearestNeighbourIdentifier) {
-									Config.NearestNeighbourIdentifier id = (Config.NearestNeighbourIdentifier) identifier;
-									Config.LetterClass best = null;
-									double leastError = -1;
-									for (Config.LetterClass letterClass : id.classes) {
-										double lcLeastError = id.comparisons.leastError(letterClass.members,
-												Util.getInputForNN(ImageIO.read(f), false));
-										if (best == null || lcLeastError < leastError) {
-											best = letterClass;
-											leastError = lcLeastError;
-										}
-									}
-									if (!best.equals(lc)) {
-										misses++;
-										System.out.println(l + "(" + f.getName() + ") mis-identified as " + best);
-									}
-								}
+								testCounts.increment(lc);
+								if (runTest(identifier, ImageIO.read(f), lc, f.getName(), l, errCounts)) { misses++; }
 							}
 						}
 					}
 				}
 				System.out.println((tests - misses) + "/" + tests);
 				System.out.println(100.0 * (tests - misses) / tests + "%");
+				ArrayList<Map.Entry<ArrayList<Config.LetterClass>, Integer>> errL = errCounts.sortedCountsHighestFirst();
+				System.out.println("Error summary:");
+				for (Map.Entry<ArrayList<Config.LetterClass>, Integer> e : errL) {
+					double err = e.getValue() * 100.0 / testCounts.counts.get(e.getKey().get(0));
+					System.out.println(e.getKey().get(0) + " -> " + e.getKey().get(1) + ": " + err + "%");
+				}
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		}
+	}
+	
+	public static void testNetworks(Config config, long seed) {
+		Random r = new Random(seed);
+		for (Config.Identifier identifier : config.identifiers) {
+			try {
+				System.out.println();
+				System.out.println("Testing " + identifier + " against synthetic letters");
+				int misses = 0;
+				int tests = 0;
+				Counter<ArrayList<Config.LetterClass>> errCounts = new Counter<ArrayList<Config.LetterClass>>();
+				Counter<Config.LetterClass> testCounts = new Counter<Config.LetterClass>();
+				for (Config.LetterClass lc : identifier.classes) {
+					for (String l : lc.members) {
+						for (Config.FontType ft : identifier.fonts) {
+							for (int i = 0; i < 50; i++) {
+								tests++;
+								testCounts.increment(lc);
+								BufferedImage img = ExampleGenerator2.makeSemiVariableLetterImage(l, ft, r);
+								if (runTest(identifier, img, lc, l + " in " + ft, l, errCounts)) { misses++; }
+							}
+						}
+					}
+				}
+				System.out.println((tests - misses) + "/" + tests);
+				System.out.println(100.0 * (tests - misses) / tests + "%");
+				ArrayList<Map.Entry<ArrayList<Config.LetterClass>, Integer>> errL = errCounts.sortedCountsHighestFirst();
+				System.out.println("Error summary:");
+				for (Map.Entry<ArrayList<Config.LetterClass>, Integer> e : errL) {
+					double err = e.getValue() * 100.0 / testCounts.counts.get(e.getKey().get(0));
+					System.out.println(e.getKey().get(0) + " -> " + e.getKey().get(1) + ": " + err + "%");
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	static boolean runTest(Config.Identifier identifier, BufferedImage img, Config.LetterClass lc, String name, String l,
+			Counter<ArrayList<Config.LetterClass>> errCounts)
+	{
+		boolean miss = false;
+		if (identifier instanceof Config.NNIdentifier) {
+			Config.NNIdentifier id = ((Config.NNIdentifier) identifier);
+			float[] input = Util.getInputForNN(img, id.proportionalInput);
+			HashMap<Config.LetterClass, Double> scores = new HashMap<Config.LetterClass, Double>();
+			for (int i = 0; i < id.numberOfNetworks; i++) {
+				float[] output = id.fastNetworks.get(i).run(input);
+				for (Config.LetterClass cmpLC : identifier.classes) {
+					for (float[] target : id.targets.get(i).get(cmpLC)) {
+						double score = Identifier.score(output, target);
+						if (!scores.containsKey(cmpLC)) {
+							scores.put(cmpLC, score);
+						} else {
+							scores.put(cmpLC, Math.max(scores.get(cmpLC), score));
+						}
+					}
+				}
+			}
+
+			Config.LetterClass bestLC = null;
+			double bestScore = 0;
+			for (Map.Entry<Config.LetterClass, Double> e : scores.entrySet()) {
+				if (bestLC == null || e.getValue() > bestScore) {
+					bestLC = e.getKey();
+					bestScore = e.getValue();
+				}
+			}
+			if (bestLC != lc) {
+				miss = true;
+				ArrayList<Config.LetterClass> errPair = new ArrayList<Config.LetterClass>();
+				errPair.add(lc);
+				errPair.add(bestLC);
+				errCounts.increment(errPair);
+				System.out.println(l + "(" + name + ") mis-identified as " + bestLC);
+			}
+		}
+		if (identifier instanceof Config.NumberOfPartsIdentifier) {
+			Config.NumberOfPartsIdentifier id = (Config.NumberOfPartsIdentifier) identifier;
+			int n = new BetterLetterFinder().find(img, new HashMap<String, String>()).size();
+			boolean aboveBoundary = n > id.numberOfPartsBoundary;
+			boolean shouldBeAboveBoundary =
+					identifier.classes.indexOf(lc) == 0
+					? id.firstIsAboveBoundary
+					: !id.firstIsAboveBoundary;
+			if (shouldBeAboveBoundary != aboveBoundary) {
+				miss = true;
+				ArrayList<Config.LetterClass> errPair = new ArrayList<Config.LetterClass>();
+				errPair.add(lc);
+				errPair.add(id.classes.get(id.classes.indexOf(lc) == 0 ? 1 : 0));
+				errCounts.increment(errPair);
+				System.out.println(l + "(" + name + ") mis-identified.");
+			}
+		}
+		if (identifier instanceof Config.TreeIdentifier) {
+			Config.TreeIdentifier id = (Config.TreeIdentifier) identifier;
+			Config.LetterClass classification = TreePredict.vote(id.tree.classify(
+				TreePredict.getImg(img, null)));
+			if (!classification.equals(lc)) {
+				miss = true;
+				ArrayList<Config.LetterClass> errPair = new ArrayList<Config.LetterClass>();
+				errPair.add(lc);
+				errPair.add(classification);
+				errCounts.increment(errPair);
+				System.out.println(l + "(" + name + ") mis-identified as " + classification);
+			}
+		}
+		if (identifier instanceof Config.NearestNeighbourIdentifier) {
+			Config.NearestNeighbourIdentifier id = (Config.NearestNeighbourIdentifier) identifier;
+			Config.LetterClass best = null;
+			double leastError = -1;
+			for (Config.LetterClass letterClass : id.classes) {
+				double lcLeastError = id.comparisons.leastError(letterClass.members,
+						Util.getInputForNN(img, false));
+				if (best == null || lcLeastError < leastError) {
+					best = letterClass;
+					leastError = lcLeastError;
+				}
+			}
+			if (!best.equals(lc)) {
+				miss = true;
+				ArrayList<Config.LetterClass> errPair = new ArrayList<Config.LetterClass>();
+				errPair.add(lc);
+				errPair.add(best);
+				errCounts.increment(errPair);
+				System.out.println(l + "(" + name + ") mis-identified as " + best);
+			}
+		}
+		
+		return miss;
 	}
 	
 	static String letterToFilename(String l) {
