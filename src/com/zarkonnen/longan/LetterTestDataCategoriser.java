@@ -64,8 +64,6 @@ public class LetterTestDataCategoriser implements KeyListener {
 			return;
 		}
 		
-		BetterLetterFinder blf = new BetterLetterFinder();
-		BetterChunker2 bc2 = new BetterChunker2();
 		new LetterTestDataCategoriser(Longan.getDefaultImplementation()).run(new File(args[0]), new File(args[1]), args[2], args[3]);
 	}
 	
