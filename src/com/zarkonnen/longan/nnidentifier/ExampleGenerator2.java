@@ -30,16 +30,6 @@ public class ExampleGenerator2 {
 				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)}, r);
 	}
 	
-	public static BufferedImage makeHighlyVariableLetterImage(String l, Config.FontType font, Random r) {
-		int intensity = r.nextInt(30);
-		int size = 10 + r.nextInt(90);
-		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
-				intensity, -Math.PI / 40 + r.nextDouble() * Math.PI / 20,
-				intensity + 160 + r.nextInt(40),
-				r.nextInt(30) + r.nextInt(20) + r.nextInt(20),
-				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)}, r);
-	}
-	
 	static BufferedImage getLetter(String l, String font, boolean italic, int blurIterations, int size, int color, double rot, int cropBoundary,
 			int noise, int[] widen, Random r) {
 		BufferedImage img = new BufferedImage(size * 2, size * 2, BufferedImage.TYPE_INT_RGB);
