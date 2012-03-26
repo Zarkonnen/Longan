@@ -148,6 +148,8 @@ public class Identifier implements LetterIdentifier {
 				result, intensityAdjustment);
 	}
 	
+	static int qq = 0;
+	
 	void runRootIdentifiers(
 			Letter letter,
 			Result result,

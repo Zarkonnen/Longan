@@ -20,8 +20,18 @@ public class ExampleGenerator2 {
 				new int[] {1, 1, 1, 1}, r);
 	}
 	
+	public static BufferedImage makeCorrectlyVariableLetterImage(String l, Config.FontType font, Random r) {
+		int intensity = r.nextInt(30) + r.nextInt(30) + r.nextInt(50);
+		int size = 30 + r.nextInt(40);
+		return getLetter(l, font.font, font.italic, r.nextInt(2), size,
+				intensity, -Math.PI / 60 + r.nextDouble() * Math.PI / 30,
+				Math.min(255, intensity + 160 + r.nextInt(50)),
+				30 + r.nextInt(30),
+				new int[] {r.nextInt(2), r.nextInt(2), r.nextInt(2), r.nextInt(2)}, r);
+	}
+	
 	public static BufferedImage makeSemiVariableLetterImage(String l, Config.FontType font, Random r) {
-		int intensity = r.nextInt(30);
+		int intensity = r.nextInt(30) + r.nextInt(0) + r.nextInt(80);
 		int size = 30 + r.nextInt(40);
 		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
 				intensity, -Math.PI / 20 + r.nextDouble() * Math.PI / 10,
@@ -32,14 +42,14 @@ public class ExampleGenerator2 {
 	
 	static BufferedImage getLetter(String l, String font, boolean italic, int blurIterations, int size, int color, double rot, int cropBoundary,
 			int noise, int[] widen, Random r) {
-		BufferedImage img = new BufferedImage(size * 2, size * 2, BufferedImage.TYPE_INT_RGB);
+		BufferedImage img = new BufferedImage(size * 4, size * 4, BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = img.createGraphics();
 		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, size * 2, size * 2);
+		g.fillRect(0, 0, size * 4, size * 4);
 		g.setFont(new Font(font, italic ? Font.ITALIC : Font.PLAIN, size));
 		g.setColor(new Color(color, color, color));
 		g.rotate(rot);
-		g.drawString(l, size, size);
+		g.drawString(l, size * 2, size * 2);
 		for (int i = 0; i < blurIterations; i++) {
 			img = noise(img, noise, r);
 			img = blur(img);

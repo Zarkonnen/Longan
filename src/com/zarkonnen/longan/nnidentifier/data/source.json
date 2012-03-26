@@ -102,6 +102,35 @@
         {
             "classes": [
                 "i",
+                "!"
+            ],
+            "root": false,
+            "seed": 31415926,
+            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
+            "type": "nearestNeighbourIdentifier",
+            "fonts": [
+                {
+                    "font": "Georgia",
+                    "italic": false
+                },
+                {
+                    "font": "Optima",
+                    "italic": false
+                },
+                {
+                    "font": "Times",
+                    "italic": false
+                },
+                {
+                    "font": "Times New Roman",
+                    "italic": false
+                }
+            ],
+            "version": "1.0"
+        },
+        {
+            "classes": [
+                "i",
                 "j"
             ],
             "root": false,
@@ -131,7 +160,7 @@
         {
             "classes": [
                 "Il1",
-                "i"
+                "i!"
             ],
             "root": false,
             "seed": 31415926,
@@ -159,211 +188,8 @@
         },
         {
             "classes": [
-                "$",
-                "sS"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
                 "B",
                 "R"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "nearestNeighbourIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "q",
-                "g"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "9",
-                "g"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "H",
-                "M"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "c",
-                "e"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "o",
-                "e"
-            ],
-            "root": false,
-            "seed": 31415926,
-            "sampleSentence": "The quick brown fox jumped over the lazy dog.",
-            "type": "treeIdentifier",
-            "fonts": [
-                {
-                    "font": "Georgia",
-                    "italic": false
-                },
-                {
-                    "font": "Optima",
-                    "italic": false
-                },
-                {
-                    "font": "Times",
-                    "italic": false
-                },
-                {
-                    "font": "Times New Roman",
-                    "italic": false
-                }
-            ],
-            "version": "1.0"
-        },
-        {
-            "classes": [
-                "o",
-                "a"
             ],
             "root": false,
             "seed": 31415926,

@@ -104,7 +104,7 @@ public class ProfileGen {
 	
 	
 	
-	static int q;
+	static int qq;
 	public static void testNetworks(Config config, File imageFolder) throws FileNotFoundException, IOException, NoSuchAlgorithmException {
 		for (Config.Identifier identifier : config.identifiers) {
 			try {
@@ -322,7 +322,10 @@ public class ProfileGen {
 						for (Config.LetterClass lc : classes) {
 							for (Config.FontType ft : identifier.fonts) {
 								String exL = lc.members.get(r.nextInt(lc.members.size()));
-								float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft, r), id.proportionalInput);
+								float[] input = getInputForNN(ExampleGenerator2.makeCorrectlyVariableLetterImage(exL, ft, r), id.proportionalInput);
+								/*try {
+									ImageIO.write(Util.convertInputToImg(input), "png", new File("/Users/zar/Desktop/owthe/" + qq++ + ".png"));
+								} catch (Exception e) { e.printStackTrace(); }*/
 								Example ex = new Example(
 										exL,
 										input,
@@ -344,7 +347,7 @@ public class ProfileGen {
 								for (int e = 0; e < 32; e++) {
 									for (Config.FontType ft : identifier.fonts) {
 										String exL = lc.members.get(r.nextInt(lc.members.size()));
-										float[] input = getInputForNN(ExampleGenerator2.makeLetterImage(exL, ft, r), id.proportionalInput);
+										float[] input = getInputForNN(ExampleGenerator2.makeCorrectlyVariableLetterImage(exL, ft, r), id.proportionalInput);
 										float[] output = nw.run(input);
 										//System.out.println(Arrays.toString(output));
 										for (int z = 0; z < OUTPUT_SIZE; z++) {
@@ -519,30 +522,6 @@ public class ProfileGen {
 			} else {
 				id.numberOfPartsBoundary = n0;
 				id.firstIsAboveBoundary = false;
-			}
-		}
-	}
-	
-	public static void extendTargets(Config.NNIdentifier id, Random r) {
-		for (int n = 0; n < id.numberOfNetworks; n++) {
-			HashMap<Config.LetterClass, ArrayList<float[]>> ts = id.targets.get(n);
-			for (Config.LetterClass lc : id.classes) {
-				ArrayList<float[]> lcTargets = ts.get(lc);
-				for (int i = 0; i < 24; i++) {
-					for (String l : lc.members) {
-						for (Config.FontType ft : id.fonts) {
-							float[] t = null;
-							if (id.networks.size() > 0) {
-								t = id.networks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
-							} else {
-								t = new float[OUTPUT_SIZE];
-								float[] t2 = id.fastNetworks.get(0).run(getInputForNN(ExampleGenerator2.makeLetterImage(l, ft, r), id.proportionalInput));
-								System.arraycopy(t2, 0, t, 0, OUTPUT_SIZE);
-							}
-							lcTargets.add(t);
-						}
-					}
-				}
 			}
 		}
 	}

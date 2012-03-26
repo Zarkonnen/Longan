@@ -291,7 +291,7 @@ public class TreePredict {
 	}
 		
 	public static <T> Img<T> getImg(String l, FontType ft, T tag, Random r) {
-		return getImg(ExampleGenerator2.makeSemiVariableLetterImage(l, ft, r), tag);
+		return getImg(ExampleGenerator2.makeCorrectlyVariableLetterImage(l, ft, r), tag);
 	}
 		
 	public static <T> Img<T> getImg(BufferedImage src, T tag) {
