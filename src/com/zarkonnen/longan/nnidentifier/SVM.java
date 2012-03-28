@@ -20,7 +20,19 @@ public class SVM {
 		}
 	}
 	
+	static float[] expand(float[] original) {
+		float[] expanded = new float[5];
+		expanded[0] = original[0];
+		expanded[1] = original[1];
+		expanded[2] = original[0] * original[0];
+		expanded[3] = original[1] * original[1];
+		expanded[4] = original[0] * original[1];
+		return expanded;
+	}
+	
 	static float dot(float[] a, float[] b) {
+		a = expand(a);
+		b = expand(b);
 		float d = 0.0f;
 		for (int i = 0; i < a.length; i++) {
 			d += a[i] * b[i];
@@ -30,18 +42,12 @@ public class SVM {
 	
 	public static void main(String[] args) throws IOException {
 		ArrayList<Img<Color>> els = new ArrayList<Img<Color>>();
-		/*els.add(new Img<Color>(new float[] { 0.1f, 0.3f }, Color.RED));
-		els.add(new Img<Color>(new float[] { 0.8f, 0.1f }, Color.BLUE));
-		/*els.add(new Img<Color>(new float[] { 0.4f, 0.7f }, Color.BLUE));
-		els.add(new Img<Color>(new float[] { 0.6f, 0.5f }, Color.BLUE));*/
-		
 		Random r = new Random();
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 100; i++) {
 			float[] data = new float[] { r.nextFloat(), r.nextFloat() };
-			//Color tag = data[0] * 0.2 + 0.3 < data[1] ? Color.RED : Color.BLUE;
-			Color tag = data[0] * data[1] > 0.3 ? Color.RED : Color.BLUE;
-			/*if (r.nextInt(10) == 0) { tag = Color.RED; }
-			if (r.nextInt(10) == 0) { tag = Color.BLUE; }*/
+			// Make everything within 0.3 of { 0.8, 0.5 } RED.
+			Color tag = (data[0] - 0.8) * (data[0] - 0.8) + (data[1] - 0.5) * (data[1] - 0.5) < 0.3 * 0.3
+					? Color.RED : Color.BLUE;
 			els.add(new Img<Color>(data, tag));
 		}
 		
@@ -50,6 +56,7 @@ public class SVM {
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, 400, 400);
 		
+		// Find best SV.
 		int bestScore = -1;
 		float[] bestV = null;
 		float bestD = 0;
@@ -83,23 +90,26 @@ public class SVM {
 			}
 		}
 		
+		// Draw support vector by checking each pixel of the display.
 		g.setColor(Color.LIGHT_GRAY);
 		for (int y = 0; y < 400; y++) { for (int x = 0; x < 400; x++) {
 			float dist = bestD - dot(bestV, new float[] { x * 1.0f / 400, y * 1.0f / 400});
-			if (Math.abs(dist) < 0.002) {
+			if (Math.abs(dist) < 0.0002) {
 				g.fillRect(x, y, 1, 1);
 			}
 		}}
 
+		// Draw classes.
 		for (Img<Color> e : els) {
 			float dist = bestD - dot(bestV, e.data);
 			g.setColor(dist < 0 ? aTag : bTag);
 			g.drawRect((int) (400 * e.data[0]) - 2, (int) (400 * e.data[1]) - 2, 5, 5);
 		}
 		
+		// Draw points with correct classes.
 		for (Img<Color> e : els) {
 			g.setColor(e.tag);
-			g.fillRect((int) (400 * e.data[0]), (int) (400 * e.data[1]), 2, 2);
+			g.fillRect((int) (400 * e.data[0]) - 1, (int) (400 * e.data[1]) - 1, 4, 4);
 		}
 		
 		ImageIO.write(img, "png", new File("/Users/zar/Desktop/out.png"));
