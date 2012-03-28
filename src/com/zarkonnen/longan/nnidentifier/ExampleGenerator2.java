@@ -31,7 +31,7 @@ public class ExampleGenerator2 {
 	}
 	
 	public static BufferedImage makeSemiVariableLetterImage(String l, Config.FontType font, Random r) {
-		int intensity = r.nextInt(30) + r.nextInt(0) + r.nextInt(80);
+		int intensity = r.nextInt(30) + r.nextInt(30) + r.nextInt(80);
 		int size = 30 + r.nextInt(40);
 		return getLetter(l, font.font, font.italic, r.nextInt(5), size,
 				intensity, -Math.PI / 20 + r.nextDouble() * Math.PI / 10,
