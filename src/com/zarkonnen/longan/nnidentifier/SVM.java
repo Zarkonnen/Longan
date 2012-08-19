@@ -10,7 +10,8 @@ import java.util.Random;
 import javax.imageio.ImageIO;
 
 public class SVM {
-	static final int IMG_SZ = 1000;
+	static final int IMG_SZ = 800;
+	static final int DIMS = 81;
 	
 	public static class Img<T> {
 		float[] data;
@@ -23,7 +24,7 @@ public class SVM {
 	}
 	
 	static float[] expand(float[] original) {
-		float[] expanded = new float[5];
+		float[] expanded = new float[6];
 		expanded[0] = original[0];
 		expanded[1] = original[1];
 		
@@ -32,19 +33,37 @@ public class SVM {
 		expanded[3] = original[1] * original[1];
 		expanded[4] = original[0] * original[1];
 		
+		expanded[5] = original[0] * original[0] + original[1] * original[1];
+		
+		/*
+		// order 2-1
+		expanded[5] = original[0] * original[1] + original[0] * original[0];
+		expanded[6] = original[0] * original[1] + original[1] * original[1];
+		expanded[7] = original[1] * original[0] + original[0] * original[0];
+		expanded[8] = original[1] * original[0] + original[1] * original[1];
+		
 		// order 3
-		/*expanded[5] = original[0] * original[0] * original[0];
-		expanded[6] = original[0] * original[0] * original[1];
-		expanded[7] = original[0] * original[1] * original[0];
-		expanded[8] = original[0] * original[1] * original[1];
-		expanded[9] = original[1] * original[0] * original[0];
-		expanded[10]= original[1] * original[0] * original[1];
-		expanded[11] = original[1] * original[1] * original[0];
-		expanded[12] = original[1] * original[1] * original[1];*/
+		expanded[9] = original[0] * original[0] * original[0];
+		expanded[10] = original[0] * original[0] * original[1];
+		expanded[11] = original[0] * original[1] * original[0];
+		expanded[12] = original[0] * original[1] * original[1];
+		expanded[13] = original[1] * original[0] * original[0];
+		expanded[14]= original[1] * original[0] * original[1];
+		expanded[15] = original[1] * original[1] * original[0];
+		expanded[16] = original[1] * original[1] * original[1];
+		
+		expanded[17] = original[0] - original[1];
+		
+		expanded[18] = (1 - original[0]) * (1 - original[0]);
+		expanded[19] = (1 - original[1]) * (1 - original[1]);
+		expanded[20] = (1 - original[0]) * (1 - original[1]);
+		
+		expanded[21] = original[0] * (1 - original[1]);
+		expanded[22] = (1 - original[0]) * original[1];*/
 		return expanded;
 	}
 	
-	static float dot(float[] a, float[] b) {
+	static float realDot(float[] a, float[] b) {
 		a = expand(a);
 		b = expand(b);
 		float d = 0.0f;
@@ -52,6 +71,22 @@ public class SVM {
 			d += a[i] * b[i];
 		}
 		return d;
+	}
+	
+	static float dotGaussian(float[] a, float[] b) {
+		double normSq = 0;
+		for (int i = 0; i < a.length; i++) {
+			normSq += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return (float) Math.exp(-0.5 * normSq);
+	}
+	
+	static float dotSigmoid(float[] a, float[] b) {
+		return (float) Math.tanh(0.7 * realDot(a, b) + 0.3);
+	}
+	
+	static float dot(float[] a, float[] b) {
+		return dotGaussian(a, b);
 	}
 	
 	static class SV {
@@ -73,14 +108,15 @@ public class SVM {
 		}
 	}
 	
-	static SV findBestSV(ArrayList<Img<Color>> els) {
-		int bestScore = -1;
+	static SV findBestSV(ArrayList<Img<Color>> allEls, ArrayList<Img<Color>> testEls) {
+		int bestScore = 0;
 		float[] bestV = null;
 		float bestD = 0;
 		Color aTag = null;
 		Color bTag = null;
-		for (Img<Color> a : els) {
-			for (Img<Color> b : els) {
+		float bestNormSquare = 0;
+		for (Img<Color> a : allEls) {
+			for (Img<Color> b : allEls) {
 				if (a.tag.equals(b.tag)) { continue; }
 				float[] vector = new float[a.data.length];
 				float[] avg = new float[a.data.length];
@@ -90,23 +126,27 @@ public class SVM {
 				}
 				float d = dot(vector, avg);
 				
-				// How good is this?
-				int score = 0;
-				for (Img<Color> e : els) {
-					float dist = d - dot(vector, e.data);
-					Color tag = dist < 0 ? a.tag : b.tag;
-					if (tag.equals(e.tag)) { score++; }
-				}
-				if (score > bestScore) {
-					bestScore = score;
-					bestV = vector;
-					bestD = d;
-					aTag = a.tag;
-					bTag = b.tag;
-				}
+				//for (float d = -4; d < 4; d += 0.05f) {
+					// How good is this?
+					int score = 0;
+					for (Img<Color> e : testEls) {
+						float dist = d - dot(vector, e.data);
+						Color tag = dist < 0 ? a.tag : b.tag;
+						if (tag.equals(e.tag)) { score++; }
+					}
+					float normSquare = 0;
+					for (float f : vector) { normSquare += f * f; }
+					if (score > bestScore || (score == bestScore && normSquare < bestNormSquare)) {
+						bestScore = score;
+						bestV = vector;
+						bestD = d;
+						aTag = a.tag;
+						bTag = b.tag;
+						bestNormSquare = normSquare;
+					}
+				//}
 			}
 		}
-		
 		return bestV == null ? null : new SV(bestV, bestD, aTag, bTag);
 	}
 	
@@ -127,91 +167,250 @@ public class SVM {
 		}
 	}
 	
-	static SVNode createSVTree(ArrayList<Img<Color>> els, int maxD, int minImprovement) {
+	static SVNode createSVTree(ArrayList<Img<Color>> allEls, ArrayList<Img<Color>> testEls, int maxD, int minImprovement,
+			Color currentTag)
+	{
 		if (maxD == 0) { return null; }
 		SVNode node = new SVNode();
-		node.sv = findBestSV(els);
+		node.sv = findBestSV(allEls, testEls);
 		if (node.sv == null) {
 			return null;
 		}
 		ArrayList<Img<Color>> aList = new ArrayList<Img<Color>>();
 		ArrayList<Img<Color>> bList = new ArrayList<Img<Color>>();
-		for (Img<Color> e : els) {
-			if (node.sv.classify(e) == node.sv.aTag) {
+		int aError = 0;
+		int bError = 0;
+		for (Img<Color> e : testEls) {
+			if (node.sv.classify(e).equals(node.sv.aTag)) {
+				if (!e.tag.equals(node.sv.aTag)) {
+					aError++;
+				}
 				aList.add(e);
 			} else {
+				if (!e.tag.equals(node.sv.bTag)) {
+					bError++;
+				}
 				bList.add(e);
 			}
 		}
-		if (aList.size() < minImprovement || bList.size() < minImprovement) {
-			return node;
+		
+		if (aError > minImprovement) {
+			node.aBranch = createSVTree(allEls, aList, maxD - 1, minImprovement, node.sv.aTag);
 		}
-		node.aBranch = createSVTree(aList, maxD - 1, minImprovement);
-		node.bBranch = createSVTree(bList, maxD - 1, minImprovement);
+		if (bError > minImprovement) {
+			node.bBranch = createSVTree(allEls, bList, maxD - 1, minImprovement, node.sv.bTag);
+		}
 		return node;
+	}
+	
+	static float distSq(float[] a, float[] b) {
+		float ds = 0;
+		for (int i = 0; i < a.length; i++) {
+			ds += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return ds;
+	}
+	
+	/**
+	 * The Fast Fourier Transform (generic version, with NO optimizations).
+	 * 
+	 * @param inputReal
+	 *            an array of length n, the real part
+	 * @param inputImag
+	 *            an array of length n, the imaginary part
+	 * @param DIRECT
+	 *            TRUE = direct transform, FALSE = inverse transform
+	 * @return a new array of length 2n
+	 */
+	public static float[] fft(final float[] inputReal, float[] inputImag,
+			boolean DIRECT) {
+		// - n is the dimension of the problem
+		// - nu is its logarithm in base e
+		int n = inputReal.length;
+
+		// If n is a power of 2, then ld is an integer (_without_ decimals)
+		double ld = Math.log(n) / Math.log(2.0);
+
+		// Here I check if n is a power of 2. If exist decimals in ld, I quit
+		// from the function returning null.
+		if (((int) ld) - ld != 0) {
+			System.out.println("The number of elements is not a power of 2.");
+			return null;
+		}
+
+		// Declaration and initialization of the variables
+		// ld should be an integer, actually, so I don't lose any information in
+		// the cast
+		int nu = (int) ld;
+		int n2 = n / 2;
+		int nu1 = nu - 1;
+		float[] xReal = new float[n];
+		float[] xImag = new float[n];
+		float tReal, tImag, p, arg, c, s;
+
+		// Here I check if I'm going to do the direct transform or the inverse
+		// transform.
+		float constant;
+		if (DIRECT) {
+			constant = (float) (-2 * Math.PI);
+		} else {
+			constant = (float) (2 * Math.PI);
+		}
+
+		// I don't want to overwrite the input arrays, so here I copy them. This
+		// choice adds \Theta(2n) to the complexity.
+		for (int i = 0; i < n; i++) {
+			xReal[i] = inputReal[i];
+			xImag[i] = inputImag[i];
+		}
+
+		// First phase - calculation
+		int k = 0;
+		for (int l = 1; l <= nu; l++) {
+			while (k < n) {
+				for (int i = 1; i <= n2; i++) {
+					p = bitreverseReference(k >> nu1, nu);
+					// direct FFT or inverse FFT
+					arg = constant * p / n;
+					c = (float) Math.cos(arg);
+					s = (float) Math.sin(arg);
+					tReal = xReal[k + n2] * c + xImag[k + n2] * s;
+					tImag = xImag[k + n2] * c - xReal[k + n2] * s;
+					xReal[k + n2] = xReal[k] - tReal;
+					xImag[k + n2] = xImag[k] - tImag;
+					xReal[k] += tReal;
+					xImag[k] += tImag;
+					k++;
+				}
+				k += n2;
+			}
+			k = 0;
+			nu1--;
+			n2 /= 2;
+		}
+
+		// Second phase - recombination
+		k = 0;
+		int r;
+		while (k < n) {
+			r = bitreverseReference(k, nu);
+			if (r > k) {
+				tReal = xReal[k];
+				tImag = xImag[k];
+				xReal[k] = xReal[r];
+				xImag[k] = xImag[r];
+				xReal[r] = tReal;
+				xImag[r] = tImag;
+			}
+			k++;
+		}
+
+		// Here I have to mix xReal and xImag to have an array (yes, it should
+		// be possible to do this stuff in the earlier parts of the code, but
+		// it's here to readibility).
+		float[] newArray = new float[xReal.length * 2];
+		float radice = (float) (1 / Math.sqrt(n));
+		for (int i = 0; i < newArray.length; i += 2) {
+			int i2 = i / 2;
+			// I used Stephen Wolfram's Mathematica as a reference so I'm going
+			// to normalize the output while I'm copying the elements.
+			newArray[i] = xReal[i2] * radice;
+			newArray[i + 1] = xImag[i2] * radice;
+		}
+		return newArray;
+	}
+
+	/**
+	 * The reference bitreverse function.
+	 */
+	private static int bitreverseReference(int j, int nu) {
+		int j2;
+		int j1 = j;
+		int k = 0;
+		for (int i = 1; i <= nu; i++) {
+			j2 = j1 / 2;
+			k = 2 * k + j1 - 2 * j2;
+			j1 = j2;
+		}
+		return k;
 	}
 	
 	public static void main(String[] args) throws IOException {
 		ArrayList<Img<Color>> els = new ArrayList<Img<Color>>();
-		Random r = new Random();
-		ArrayList<Img<Color>> attractors = new ArrayList<Img<Color>>();
-		for (int i = 0; i < 10; i++) {
-			float[] data = new float[] { r.nextFloat(), r.nextFloat() };
-			Color tag = i < 5 ? Color.RED : Color.BLUE;
-			attractors.add(new Img<Color>(data, tag));
+		Random r = new Random(/*2413*/);
+		String[] FONTS = { "Times", "Georgia", "Optima", "Times New Roman" };
+		for (int i = 0; i < 200; i++) {
+			TreePredict.Img<Color> timg = TreePredict.getImg("a", new Config.FontType(FONTS[i % FONTS.length], false), Color.RED, r);
+			float[] fftdata = fft(timg.data, new float[timg.data.length], true);
+			els.add(new Img<Color>(fftdata, Color.RED));
 		}
-		for (int i = 0; i < 1000; i++) {
-			float[] data = new float[] { r.nextFloat(), r.nextFloat() };
-			// Make everything within 0.3 of { 0.8, 0.5 } RED.
-			/*Color tag = (data[0] - 0.8) * (data[0] - 0.8) + (data[1] - 0.5) * (data[1] - 0.5) < 0.3 * 0.3
-					? Color.RED : Color.BLUE;*/
-			Img<Color> bestA = null;
-			float bestD = 0;
-			for (Img<Color> a : attractors) {
-				float dist = (a.data[0] - data[0]) * (a.data[0] - data[0]) + (a.data[1] - data[1]) * (a.data[1] - data[1]);
-				if (bestA == null || dist < bestD) {
-					bestA = a;
-					bestD = dist;
-				}
-			}
-			els.add(new Img<Color>(data, bestA.tag));
+		for (int i = 0; i < 200; i++) {
+			TreePredict.Img<Color> timg = TreePredict.getImg("e", new Config.FontType(FONTS[i % FONTS.length], false), Color.BLUE, r);
+			float[] fftdata = fft(timg.data, new float[timg.data.length], true);
+			els.add(new Img<Color>(fftdata, Color.BLUE));
 		}
 		
-		BufferedImage img = new BufferedImage(IMG_SZ, IMG_SZ, BufferedImage.TYPE_INT_RGB);
-		Graphics2D g = img.createGraphics();
-		g.setColor(Color.WHITE);
-		g.fillRect(0, 0, IMG_SZ, IMG_SZ);
+		SVNode tree = createSVTree(els, els, 5, 2, null);
+		int failures = 0;
+		int tries = 0;
+		for (File f : new File("/Users/zar/Desktop/DesktopContents/ltestdata3/a/").listFiles()) {
+			if (!f.getName().endsWith(".png")) { continue; }
+			float[] data = TreePredict.getImg(ImageIO.read(f), Color.RED).data;
+			float[] fftdata = fft(data, new float[data.length], true);
+			Color tag = tree.classify(new Img(fftdata, Color.RED));
+			if (!tag.equals(Color.RED)) { failures++; }
+			tries++;
+		}
 		
-		// Find SV Tree
-		SVNode tree = createSVTree(els, 20, 3);
+		for (File f : new File("/Users/zar/Desktop/DesktopContents/ltestdata3/e/").listFiles()) {
+			if (!f.getName().endsWith(".png")) { continue; }
+			float[] data = TreePredict.getImg(ImageIO.read(f), Color.BLUE).data;
+			float[] fftdata = fft(data, new float[data.length], true);
+			Color tag = tree.classify(new Img(fftdata, Color.BLUE));
+			if (!tag.equals(Color.BLUE)) { failures++; }
+			tries++;
+		}
 		
-		// Draw support vector by checking each pixel of the display.
-		drawVector(tree, g, 0);
+		System.out.println(failures + "/" + tries);
+		System.out.println((tries - failures) * 100.0 / tries);
+		
+		/*// Find SV Tree
+		for (int i = 1; i < 8; i += 2) {
+			BufferedImage img = new BufferedImage(IMG_SZ, IMG_SZ, BufferedImage.TYPE_INT_RGB);
+			Graphics2D g = img.createGraphics();
+			g.setColor(Color.WHITE);
+			g.fillRect(0, 0, IMG_SZ, IMG_SZ);
+			SVNode tree = createSVTree(els, els, i, 2, null);
 
-		// Draw classes.
-		int score = 0;
-		for (Img<Color> e : els) {
-			Color c = tree.classify(e);
-			if (c == e.tag) { score++; }
-			g.setColor(c);
-			g.drawRect((int) (IMG_SZ * e.data[0]) - 2, (int) (IMG_SZ * e.data[1]) - 2, 5, 5);
-		}
-		
-		// Draw points with correct classes.
-		for (Img<Color> e : els) {
-			g.setColor(e.tag);
-			g.fillRect((int) (IMG_SZ * e.data[0]) - 1, (int) (IMG_SZ * e.data[1]) - 1, 4, 4);
-		}
-		
-		g.setColor(Color.BLACK);
-		g.drawString(score + "/" + els.size(), 10, 20);
-		
-		ImageIO.write(img, "png", new File("/Users/zar/Desktop/out.png"));
+			// Draw support vector by checking each pixel of the display.
+			drawVector(tree, g, 0);
+
+			// Draw classes.
+			int score = 0;
+			for (Img<Color> e : els) {
+				Color c = tree.classify(e);
+				if (c == e.tag) { score++; }
+				g.setColor(c);
+				g.drawRect((int) (IMG_SZ / 2 * (e.data[0] + 1)) - 2, (int) (IMG_SZ / 2 * (e.data[1] + 1)) - 2, 5, 5);
+			}
+
+			// Draw points with correct classes.
+			for (Img<Color> e : els) {
+				g.setColor(e.tag);
+				g.fillRect((int) (IMG_SZ / 2 * (e.data[0] + 1)) - 1, (int) (IMG_SZ / 2 * (e.data[1] + 1)) - 1, 4, 4);
+			}
+
+			g.setColor(Color.BLACK);
+			g.drawString(score + "/" + els.size(), 10, 20);
+
+			ImageIO.write(img, "png", new File("/Users/zar/Desktop/" + i + ".png"));
+		}*/
 	}
 	
 	static int drawC(SVNode n, float[] coords, int level) {
-		float dist = n.sv.d - dot(n.sv.v, coords);
-		if (Math.abs(dist) < 0.0001) {
+		double dist = n.sv.d - dot(n.sv.v, coords);
+		//System.out.println(dist);
+		if (Math.abs(dist) < 2.28E-11) {
 			return Math.min(220, 120 + level * 30);
 		}
 		if (dist < 0 && n.aBranch != null) {
@@ -225,7 +424,10 @@ public class SVM {
 	
 	static void drawVector(SVNode n, Graphics2D g, int level) {
 		for (int y = 0; y < IMG_SZ; y++) { for (int x = 0; x < IMG_SZ; x++) {
-			int intensity = drawC(n, new float[] { x * 1.0f / IMG_SZ, y * 1.0f / IMG_SZ}, 0);
+			float[] coords = new float[DIMS];
+			coords[0] = x * 2.0f / IMG_SZ - 1;
+			coords[1] = y * 2.0f / IMG_SZ - 1;
+			int intensity = drawC(n, coords, 0);
 			if (intensity == 255) { continue; }
 			g.setColor(new Color(intensity, intensity, intensity));
 			g.fillRect(x, y, 1, 1);
